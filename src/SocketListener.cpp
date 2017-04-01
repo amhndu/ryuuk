@@ -16,37 +16,57 @@ namespace ryuuk
     {
         int status;
         addrinfo hints;
+        addrinfo *serverInfo = nullptr;
 
         std::memset(&hints, 0, sizeof hints); // make sure the struct is empty
         hints.ai_family = AF_UNSPEC;     // don't care IPv4 or IPv6
         hints.ai_socktype = SOCK_STREAM; // TCP stream sockets
         hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
-        if (m_serverInfo)
-        {
-            freeaddrinfo(m_serverInfo);
-        }
 
-        if ((status = getaddrinfo(NULL, std::to_string(port), &hints, &m_serverInfo)) != 0)
+        if ((status = getaddrinfo(NULL, std::to_string(port), &hints, &serverInfo)) != 0)
         {
             std::cerr << "getaddrinfo error:" << gai_strerror(status) << std::endl;
             return false;
         }
 
-        m_socketfd = socket(m_serverInfo->ai_family, m_serverInfo->ai_socktype, m_serverInfo->ai_protocol);
-        if (m_socketfd < 0)
+        auto p = serverInfo;
+        for (; p != nullptr; p = p->ai_next)
         {
-            std::cerr << "Error in creating socket file descriptor.\n" << std::endl;
+            m_socketfd = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+            if (m_socketfd < 0)
+            {
+                std::cerr << "Error in creating socket file descriptor. Trying a different one." << std::endl;
+                continue;
+            }
+
+            int yes = 1;
+            if (setsockopt(m_socketfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+            {
+                std::cerr << "setsockopt" << std::endl;
+                return false;
+            }
+
+            if (bind(m_socketfd, serverInfo->ai_addr, serverInfo->ai_addrlen) < 0)
+            {
+                std::cerr << "Error in binding socket to port, trying with different settings." << std::endl;
+                continue;
+            }
+        }
+
+        freeaddrinfo(serverInfo);
+
+        if (p == nullptr)
+        {
+            std::cerr << "Couldn't find an appropriate server info" << std::endl;
             return false;
         }
 
-        if (bind(m_socketfd, m_serverInfo->ai_addr, m_serverInfo->ai_addrlen) < 0)
+        if (::listen(m_socketfd, n) < 0)
         {
-            std::cerr << "Error in binding socket to port" << std::endl;
+            std::cerr << "Error in listening" << std::endl;
             return false;
         }
-
-        ::listen(m_socketfd, n);
 
         return true;
     }
@@ -59,7 +79,6 @@ namespace ryuuk
 
     SocketListener::~SocketListener()
     {
-        freeaddrinfo(m_serverInfo);
     }
 
 

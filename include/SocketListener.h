@@ -17,7 +17,6 @@ namespace ryuuk
         StreamSocket accept();
     private:
         int m_socketfd;
-        struct addrinfo *m_serverInfo;
     };
 
 }
