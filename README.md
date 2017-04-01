@@ -20,3 +20,9 @@ Becuase why not ?
 
 * Full HTTP/1.1 and HTTP/2 support (implement RFC 7540)
 * World domination 
+
+## References
+
+https://tools.ietf.org/html/rfc723[0-7]  
+https://tools.ietf.org/html/rfc2616  
+http://www2005.org/cdrom/docs/p730.pdf  
