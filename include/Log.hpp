@@ -25,7 +25,7 @@
 
 #define LOG(level) \
 if (level > ryuuk::Log::get().getLevel()) ; \
-else ryuuk::Log::get().getStream() << '[' << __FILENAME__ << ":" << std::dec << __LINE__ << "] "
+else ryuuk::Log::get().getStream() << toErrorString(level) << '[' << __FILENAME__ << ":" << std::dec << __LINE__ << "] "
 
 namespace ryuuk
 {
@@ -35,6 +35,17 @@ namespace ryuuk
         INFO  ,
         DEBUG
     };
+    
+    static inline std::string toErrorString(Level lvl)
+    {
+        switch (lvl)
+        {
+            case ERROR: return "[ ERROR ]";
+            case INFO : return "[ INFO  ]";
+            case DEBUG: return "[ DEBUG ]";
+            default   : return "";
+        }
+    }
     
     class Log
     {

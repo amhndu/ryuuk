@@ -6,7 +6,7 @@ namespace ryuuk
 
     Log::~Log()
     {
-        m_logStream->flush();
+        //m_logStream->flush();
     }
 
     Log& Log::get()

@@ -14,14 +14,18 @@ int main(int argc, char **argv)
     else
         ryuuk::Log::get().setLogStream(std::cout);
         
-    ryuuk::Log::get().setLevel(ryuuk::INFO);
+    ryuuk::Log::get().setLevel(ryuuk::DEBUG);
 
-    LOG(ryuuk::INFO) << "   Ryuuk - Simple, multi-threaded, C++ webserver" << std::endl
-                     << "===================================================" << std::endl;
+    std::cout << "---------------------------------------------------" << std::endl
+              << "   Ryuuk - Simple, multi-threaded, C++ webserver" << std::endl
+              << "---------------------------------------------------" << std::endl
+              << "          (Written by true Shinigamis)" << std::endl
+              << "===================================================" << std::endl;
                      
-    LOG(ryuuk::INFO) << "Foo" << std::endl;
-    LOG(ryuuk::ERROR) << "Foo" << std::endl;
-    LOG(ryuuk::DEBUG) << "Foo" << std::endl;
+    LOG(ryuuk::DEBUG) << "Foo Debug" << std::endl;
+    LOG(ryuuk::INFO) << "Foo Info" << std::endl;
+    LOG(ryuuk::ERROR) << "Foo Error" << std::endl;
+    LOG(ryuuk::DEBUG) << "Foo Debug" << std::endl;
     
         
     return EXIT_SUCCESS;

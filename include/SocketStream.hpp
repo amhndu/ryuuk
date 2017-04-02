@@ -16,6 +16,8 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
+#include "Log.hpp"
+
 
 namespace ryuuk
 {
@@ -94,7 +96,15 @@ namespace ryuuk
         *
         * @return The FD associated with this TCP socket object
         */
-        int getSocketFd();
+        inline int getSocketFd();
+        
+        /**
+        * Helper to check if this SockStream object is
+        * associated to a valid TCP socket or not.
+        *
+        * @return true if a valid TCP socket is associated
+        */
+        inline bool valid();
 
     private:
 

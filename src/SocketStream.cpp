@@ -9,23 +9,22 @@ namespace ryuuk
     SocketStream::SocketStream() : m_clientInfo(nullptr),
                                    m_socketfd(-1)
     {
-        std::cerr << "Empty SocketStream object created." << std::endl;
+        LOG(DEBUG) << "Empty SocketStream object created." << std::endl;
     }
 
     SocketStream::SocketStream(int sockfd, struct addrinfo sockinfo)
     {
         m_socketfd = sockfd;
-        //memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
         m_clientInfo = new struct addrinfo;
         memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
         
-        std::cerr << "SocketStream object created." << std::endl;
+        LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
     SocketStream::~SocketStream()
     {
         freeaddrinfo(m_clientInfo);
-        std::cerr << "Destroyed SocketStream object" << std::endl;
+        LOG(DEBUG) << "Destroyed SocketStream object" << std::endl;
     }
 
     bool SocketStream::create()
@@ -44,14 +43,14 @@ namespace ryuuk
         {
             if (0 > (sent = ::send(m_socketfd, (const void *)(data + totalSent), size_t(len - totalSent), 0)))
             {
-                std::cerr << "send() : Error in sending data to remote client" << std::endl;
+                LOG(ERROR) << "send() : Error in sending data to remote client" << std::endl;
                 return totalSent;
             }
 
             totalSent += sent;
         }
 
-        std::cout << "Sent data to remote client" << std::endl;
+        LOG(DEBUG) << "Sent data to remote client" << std::endl;
 
         return totalSent;
     }
@@ -65,12 +64,14 @@ namespace ryuuk
             if (0 > (recvd = recv(m_socketfd, m_rwbuffer + totalRecvd,
                         DEFAULT_MSG_LENGTH - totalRecvd, 0)))
             {
-                std::cerr << "recv() : Error in receving data from remote client" << std::endl;
+                LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
                 return totalRecvd;
             }
 
             totalRecvd += recvd;
         }
+        
+        LOG(DEBUG) << "Recevied data from remote client" << std::endl;
 
         return totalRecvd;
     }
@@ -79,4 +80,10 @@ namespace ryuuk
     {
         return m_socketfd;
     }
+    
+    bool SocketStream::valid()
+    {
+        return m_socketfd > 0;
+    }
+    
 }
