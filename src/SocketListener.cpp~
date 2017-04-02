@@ -79,7 +79,7 @@ namespace ryuuk
 
     SocketListener::~SocketListener()
     {
-        close(m_socketfd);
+        close(m_socketfd)
     }
 
 
