@@ -10,6 +10,7 @@
  */
 
 
+#include <cstddef>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
@@ -24,7 +25,7 @@ namespace ryuuk
     public:
 
         /* Default buffer length for send/receive operations */
-        constexpr int DEFAULT_MSG_LENGTH = 4096; // bytes
+        static constexpr int DEFAULT_MSG_LENGTH = 4096; // bytes
 
         /**
         * Default constructor. Creates an empty TCP
@@ -38,7 +39,7 @@ namespace ryuuk
         *
         * @param sockfd - A valid socket descriptor ID
         */
-        SocketStream(int sockfd);
+        SocketStream(int sockfd, struct addrinfo sockinfo);
 
         /**
         * Destructor. Leave out all the rest.
@@ -101,7 +102,7 @@ namespace ryuuk
         int m_socketfd;
 
         /* Socket connection info */
-        addrinfo *m_clientInfo;
+        struct addrinfo *m_clientInfo;
 
         /* Temporary R/W buffer */
         char m_rwbuffer[DEFAULT_MSG_LENGTH];

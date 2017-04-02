@@ -1,18 +1,19 @@
-#include "SocketListener.h"
+#include "SocketListener.hpp"
 
 #include <cstdlib>
+#include <cstring>
+#include <unistd.h>
 #include <iostream>
 
 namespace ryuuk
 {
     SocketListener::SocketListener() :
-        m_socketfd(0),
-        m_serverInfo(nullptr)
+        m_socketfd(0)
     {
 
     }
 
-    bool SocketListener::listen(int port, int n)
+    bool SocketListener::listen(int port, int backlog)
     {
         int status;
         addrinfo hints;
@@ -24,7 +25,7 @@ namespace ryuuk
         hints.ai_flags = AI_PASSIVE;     // fill in my IP for me
 
 
-        if ((status = getaddrinfo(NULL, std::to_string(port), &hints, &serverInfo)) != 0)
+        if ((status = getaddrinfo(NULL, std::to_string(port).c_str(), &hints, &serverInfo)) != 0)
         {
             std::cerr << "getaddrinfo error:" << gai_strerror(status) << std::endl;
             return false;
@@ -62,7 +63,7 @@ namespace ryuuk
             return false;
         }
 
-        if (::listen(m_socketfd, n) < 0)
+        if (::listen(m_socketfd, backlog) < 0)
         {
             std::cerr << "Error in listening" << std::endl;
             return false;
@@ -71,15 +72,34 @@ namespace ryuuk
         return true;
     }
 
-    StreamSocket SocketListener::accept()
+    SocketStream SocketListener::accept()
     {
-        int client_sockfd = ::accept(m_socketfd, foo, bar);
-        return StreamSocket{client_sockfd};
+        //int client_sockfd = ::accept(m_socketfd, foo, bar);
+        
+        //struct sockaddr_storage their_addr;
+        //socklent_t addr_size = sizeof their_addr;
+        
+        //int client_sockfd = accept(m_socketfd, (struct sockaddr *)&their_addr, &addr_size);
+        
+        struct addrinfo client_info;
+
+        memset((void *)&client_info, 0, sizeof client_info);
+        
+        int client_sockfd = ::accept(m_socketfd, (struct sockaddr *)client_info.ai_addr, &(client_info.ai_addrlen));
+        
+        if (0 > client_sockfd)
+        {
+            std::cerr << "accept() : Error in establishing connection with remote socket" << std::endl;
+            
+            return SocketStream{};
+        }
+        
+        return SocketStream{client_sockfd, client_info};
     }
 
     SocketListener::~SocketListener()
     {
-        close(m_socketfd);
+        ::close(m_socketfd);
     }
 
 

@@ -1,9 +1,11 @@
-#ifndef SOCKETLISTENER_H
-#define SOCKETLISTENER_H
+#ifndef SOCKETLISTENER_HPP
+#define SOCKETLISTENER_HPP
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+
+#include "SocketStream.hpp"
 
 namespace ryuuk
 {
@@ -13,11 +15,12 @@ namespace ryuuk
     public:
         SocketListener();
         ~SocketListener();
-        listen(int port);
-        StreamSocket accept();
+        bool listen(int port, int backlog);
+        SocketStream accept();
+        
     private:
         int m_socketfd;
     };
 
 }
-#endif // SOCKETLISTENER_H
+#endif // SOCKETLISTENER_HPP

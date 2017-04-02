@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 
 namespace ryuuk
 {
@@ -11,9 +12,13 @@ namespace ryuuk
         std::cerr << "Empty SocketStream object created." << std::endl;
     }
 
-    SocketStream::SocketStream(int sockfd)
+    SocketStream::SocketStream(int sockfd, struct addrinfo sockinfo)
     {
         m_socketfd = sockfd;
+        //memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
+        m_clientInfo = new struct addrinfo;
+        memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
+        
         std::cerr << "SocketStream object created." << std::endl;
     }
 
@@ -31,13 +36,13 @@ namespace ryuuk
     {
     }
 
-    std::size_t SocketStream::send(const char* data, std::size_t len)
+    size_t SocketStream::send(const char* data, size_t len)
     {
         int totalSent = 0, sent = 0;
 
         while (totalSent < len)
         {
-            if (0 > (sent = send(m_socketfd, data + totalSent, len - totalSent, 0)))
+            if (0 > (sent = ::send(m_socketfd, (const void *)(data + totalSent), size_t(len - totalSent), 0)))
             {
                 std::cerr << "send() : Error in sending data to remote client" << std::endl;
                 return totalSent;
@@ -51,7 +56,7 @@ namespace ryuuk
         return totalSent;
     }
 
-     SocketStream::receive()
+    int SocketStream::receive()
     {
         int totalRecvd = 0, recvd = 0;
 
