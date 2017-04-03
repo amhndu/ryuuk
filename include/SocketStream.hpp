@@ -9,6 +9,9 @@
  *
  */
 
+#ifndef SOCKETSTREAM_HPP
+#define SOCKETSTREAM_HPP
+
 
 #include <cstddef>
 #include <sys/types.h>
@@ -118,3 +121,5 @@ namespace ryuuk
         char m_rwbuffer[DEFAULT_MSG_LENGTH];
     };
 }
+
+#endif // SOCKETSTREAM_HPP

@@ -111,10 +111,17 @@ namespace ryuuk
         
         return SocketStream{client_sockfd, client_info};
     }
+    
+    void SocketListener::close()
+    {
+        ::close(m_socketfd);
+        LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
+    }
 
     SocketListener::~SocketListener()
     {
         ::close(m_socketfd);
+        //LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
     }
 
 

@@ -60,6 +60,11 @@ namespace ryuuk
         */
         SocketStream accept();
         
+        /**
+        * Destroy the listener
+        */
+        void close();
+        
     private:
     
         /* The socket file descriptor of the TCP
