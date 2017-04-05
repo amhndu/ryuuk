@@ -98,11 +98,12 @@ namespace ryuuk
 
     SocketStream SocketListener::accept()
     {
-        struct addrinfo client_info;
+        sockaddr_storage client_info;
+        socklen_t addr_size = sizeof(client_info);
 
         memset((void *)&client_info, 0, sizeof client_info);
 
-        int client_sockfd = ::accept(m_socketfd, (struct sockaddr *)client_info.ai_addr, &(client_info.ai_addrlen));
+        int client_sockfd = ::accept(m_socketfd, reinterpret_cast<sockaddr*>(&client_info), &addr_size);
 
         if (0 > client_sockfd)
         {

@@ -44,7 +44,7 @@ namespace ryuuk
         *
         * @param sockfd - A valid socket descriptor ID
         */
-        SocketStream(int sockfd, struct addrinfo sockinfo);
+        SocketStream(int sockfd, sockaddr_storage& sockinfo);
 
         /**
         * Destructor. Leave out all the rest.
@@ -104,7 +104,7 @@ namespace ryuuk
     private:
 
         /* Socket connection info */
-        struct addrinfo *m_clientInfo;
+        sockaddr_storage m_clientAddr;
 
         /* Temporary R/W buffer */
         char m_rwbuffer[DEFAULT_MSG_LENGTH];

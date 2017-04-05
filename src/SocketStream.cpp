@@ -6,22 +6,23 @@
 
 namespace ryuuk
 {
-    SocketStream::SocketStream() : m_clientInfo(nullptr)
+    SocketStream::SocketStream()
     {
         LOG(DEBUG) << "Empty SocketStream object created." << std::endl;
     }
 
-    SocketStream::SocketStream(int sockfd, struct addrinfo sockinfo) : Socket(sockfd)
+    SocketStream::SocketStream(int sockfd, sockaddr_storage& sockinfo) : Socket(sockfd),
+                                                                         m_clientAddr(sockinfo)
     {
-        m_clientInfo = new struct addrinfo;
-        memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
+        //m_clientInfo = new struct addrinfo;
+        //memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
 
         LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
     SocketStream::~SocketStream()
     {
-        freeaddrinfo(m_clientInfo);
+        //freeaddrinfo(m_clientInfo);
         LOG(DEBUG) << "Destroyed SocketStream object" << std::endl;
     }
 
@@ -55,23 +56,18 @@ namespace ryuuk
 
     int SocketStream::receive()
     {
-        int totalRecvd = 0, recvd = 0;
+        int recvd = 0;
 
-        while (totalRecvd < DEFAULT_MSG_LENGTH)
+        if (0 > (recvd = recv(m_socketfd, m_rwbuffer,
+                    DEFAULT_MSG_LENGTH, 0)))
         {
-            if (0 > (recvd = recv(m_socketfd, m_rwbuffer + totalRecvd,
-                        DEFAULT_MSG_LENGTH - totalRecvd, 0)))
-            {
-                LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
-                return totalRecvd;
-            }
+            LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
 
-            totalRecvd += recvd;
         }
+        else
+            LOG(DEBUG) << "Recevied data from remote client" << std::endl;
 
-        LOG(DEBUG) << "Recevied data from remote client" << std::endl;
-
-        return totalRecvd;
+        return recvd;
     }
 
 }

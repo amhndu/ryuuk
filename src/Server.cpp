@@ -43,6 +43,7 @@ namespace ryuuk
         }
 
         m_running = true;
+        m_selector.add(m_listener);
 
         LOG(INFO) << "Listening for incoming connections..." << std::endl;
     }
@@ -140,6 +141,7 @@ namespace ryuuk
             if (m_selector.isReady(socket))
             {
                 LOG(DEBUG) << "Recieved a request" << std::endl;
+                socket.receive();
                 // TODO parse request
                 std::string linend = "\r\n",
                             html = "<html><head><title>Ryuuk Test</title></head><body><h1>Do you know L ?</h1>"
@@ -159,11 +161,11 @@ namespace ryuuk
         if (m_selector.isReady(m_listener))
         {
             LOG(DEBUG) << "Accepting new connection" << std::endl;
-            auto socket = m_listener.accept();
+            auto &&socket = m_listener.accept();
             if (socket.valid())
             {
                 m_clients.push_back(std::move(socket));
-                // m_selector.add(m_clients.back());
+                m_selector.add(m_clients.back());
             }
             else
             {
