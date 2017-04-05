@@ -94,13 +94,6 @@ namespace ryuuk
         */
         int receive();
 
-        /**
-        * Get the socket file descriptor
-        *
-        * @return The FD associated with this TCP socket object
-        */
-        inline int getSocketFd();
-
     private:
 
         /* Socket connection info */

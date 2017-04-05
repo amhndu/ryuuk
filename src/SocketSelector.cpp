@@ -62,6 +62,33 @@ namespace ryuuk
         LOG(DEBUG) << "Added socket with fd " << socketfd << " to the set" << std::endl;
     }
 
+    void SocketSelector::remove(Socket& socket)
+    {
+        if (!socket.valid())
+        {
+            LOG(ERROR) << "Attempting to remove invalid socket from selector" << std::endl;
+            return;
+        }
+
+        int socketfd = socket.getSocketFd();
+        if (socketfd >= FD_SETSIZE)
+        {
+            LOG(ERROR) << "[FATAL] ryuuk::SocketSelector::remove(): Socket descriptor is too high!" << std::endl;
+            return;
+        }
+
+        if (!FD_ISSET(socketfd, &m_socketsFds))
+        {
+            LOG(INFO) << "Socket with FD: " << std::to_string(socketfd) << " was never present in selector to remove." << std::endl;
+            return;
+        }
+
+        --m_count;
+        // no can do with maxfd
+        FD_CLR(socketfd, &m_socketsFds);
+        FD_CLR(socketfd, &m_readyFds);
+    }
+
     bool SocketSelector::wait(unsigned timeout)
     {
         timeval tOut;
@@ -93,7 +120,6 @@ namespace ryuuk
 
         return FD_ISSET(socketfd, &m_readyFds) != 0;
 
-        return false;
     }
 
 }

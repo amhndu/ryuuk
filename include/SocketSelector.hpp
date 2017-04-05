@@ -28,6 +28,7 @@ namespace ryuuk
         void clear();
 
         void add(Socket& socket);
+        void remove(Socket& socket);
 
         bool wait(unsigned timeout = DEFAULT_TIMEOUT); // in microseconds
 

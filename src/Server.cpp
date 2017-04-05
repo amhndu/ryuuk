@@ -136,12 +136,19 @@ namespace ryuuk
 
     void Server::receive()
     {
-        for (auto& socket : m_clients)
+        for (auto sock_i = m_clients.begin(); sock_i != m_clients.end(); )
         {
-            if (m_selector.isReady(socket))
+            if (m_selector.isReady(*sock_i))
             {
                 LOG(DEBUG) << "Recieved a request" << std::endl;
-                socket.receive();
+                if (sock_i->receive() <= 0)
+                {
+                    LOG(DEBUG) << "Removing socket " << sock_i->getSocketFd() << std::endl;
+                    m_selector.remove(*sock_i);
+                    sock_i = m_clients.erase(sock_i);
+                    continue;
+                }
+
                 // TODO parse request
                 std::string linend = "\r\n",
                             html = "<html><head><title>Ryuuk Test</title></head><body><h1>Do you know L ?</h1>"
@@ -151,8 +158,14 @@ namespace ryuuk
                                   "Content-Length: " + std::to_string(html.size()) + linend +
                                   linend +
                                   html;
-                socket.send(res.c_str(), res.size());
+                if (sock_i->send(res.c_str(), res.size()) != res.size())
+                {
+                    LOG(INFO) << "Couldn't send HTTP response" << std::endl;
+                }
+
             }
+
+            ++sock_i;
         }
     }
 
