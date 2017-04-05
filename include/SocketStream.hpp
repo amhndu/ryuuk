@@ -13,19 +13,19 @@
 #define SOCKETSTREAM_HPP
 
 
+#include "Socket.hpp"
+
 #include <cstddef>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "Log.hpp"
-
 
 namespace ryuuk
 {
 
-    class SocketStream
+    class SocketStream : public Socket
     {
     public:
 
@@ -95,13 +95,6 @@ namespace ryuuk
         int receive();
 
         /**
-        * Get the socket file descriptor
-        *
-        * @return The FD associated with this TCP socket object
-        */
-        inline int getSocketFd();
-        
-        /**
         * Helper to check if this SockStream object is
         * associated to a valid TCP socket or not.
         *
@@ -110,9 +103,6 @@ namespace ryuuk
         inline bool valid();
 
     private:
-
-        /* Socket FD */
-        int m_socketfd;
 
         /* Socket connection info */
         struct addrinfo *m_clientInfo;
