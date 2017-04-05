@@ -43,6 +43,10 @@ function(define_file_basename_for_sources targetname)
     endforeach()
 endfunction()
 
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_definitions(-DLOG_LEVEL=DEBUG)
+endif()
+
 # Specify include Directory
 include_directories("${PROJECT_SOURCE_DIR}/include")
 

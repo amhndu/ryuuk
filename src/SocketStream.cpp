@@ -36,7 +36,7 @@ namespace ryuuk
 
     size_t SocketStream::send(const char* data, size_t len)
     {
-        int totalSent = 0, sent = 0;
+        size_t totalSent = 0, sent = 0;
 
         while (totalSent < len)
         {

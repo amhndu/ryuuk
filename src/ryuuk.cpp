@@ -21,6 +21,9 @@
 
 #endif
 
+#ifndef LOG_LEVEL
+#define LOG_LEVEL INFO
+#endif
 
 int main(int argc, char **argv)
 {
@@ -35,7 +38,7 @@ int main(int argc, char **argv)
     else
         ryuuk::Log::get().setLogStream(std::cerr);
 
-    ryuuk::Log::get().setLevel(ryuuk::DEBUG);
+    ryuuk::Log::get().setLevel(ryuuk::LOG_LEVEL);
 
     ryuuk::Log::get().getStream()
               << "---------------------------------------------------" << std::endl
