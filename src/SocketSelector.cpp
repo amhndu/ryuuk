@@ -13,12 +13,12 @@ namespace ryuuk
 //        m_tv.tv_sec = 5; // ouch!, magic no.s
 //        m_tv.tv_usec = 0;
 
-        LOG(INFO) << "Created TCP socket selector" << std::endl;
+        LOG(DEBUG) << "Created TCP socket selector" << std::endl;
     }
 
     SocketSelector::~SocketSelector()
     {
-        LOG(INFO) << "Destroyed TCP socket selector" << std::endl;
+        LOG(DEBUG) << "Destroyed TCP socket selector" << std::endl;
     }
 
     void SocketSelector::clear()
@@ -59,6 +59,7 @@ namespace ryuuk
         m_count++;
         m_maxFd = std::max(m_maxFd, socketfd);
         FD_SET(socketfd, &m_socketsFds);
+        LOG(DEBUG) << "Added socket with fd " << socketfd << " to the set" << std::endl;
     }
 
     bool SocketSelector::wait(unsigned timeout)

@@ -114,8 +114,12 @@ namespace ryuuk
 
     void SocketListener::close()
     {
-        close(m_socketfd);
-        LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
+        if (m_socketfd > 0)
+        {
+            ::close(m_socketfd);
+            m_socketfd = -1;
+            LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
+        }
     }
 
     SocketListener::~SocketListener()

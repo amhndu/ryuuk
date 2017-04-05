@@ -4,6 +4,7 @@
 #include "Log.hpp"
 #include "SocketStream.hpp"
 #include "SocketListener.hpp"
+#include "SocketSelector.hpp"
 
 #include <list>
 #include <memory>
@@ -23,8 +24,6 @@ namespace ryuuk
 
         void run();
 
-//        bool wait();
-//
         void receive();
 
         void addClient();
@@ -46,7 +45,7 @@ namespace ryuuk
 
         SocketListener m_listener;
         std::list<SocketStream> m_clients;
-
+        SocketSelector m_selector;
         bool m_running;
     };
 

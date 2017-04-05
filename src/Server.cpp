@@ -123,22 +123,14 @@ namespace ryuuk
 
             //LOG(INFO) << "foo" << std::endl;
 
-            if (wait())
+            // Wait until some socket is active
+            if (m_selector.wait())
             {
                 addClient();
-            }
-            else
-            {
                 receive();
             }
         }
-        m_listener.close();
         LOG(INFO) << "Server closed." << std::endl;
-    }
-
-    bool Server::wait()
-    {
-        return false;
     }
 
     void Server::receive()
@@ -147,7 +139,8 @@ namespace ryuuk
         {
             if (m_selector.isReady(socket))
             {
-                // screw the request.
+                LOG(DEBUG) << "Recieved a request" << std::endl;
+                // TODO parse request
                 std::string linend = "\r\n",
                             html = "<html><head><title>Ryuuk Test</title></head><body><h1>Do you know L ?</h1>"
                                    "<h2>The Gods of Death love apples</h2></body>",
@@ -163,16 +156,19 @@ namespace ryuuk
 
     void Server::addClient()
     {
-        // if (m_selector.isReady(listener))
-        auto socket = m_listener.accept();
-        if (socket.valid())
+        if (m_selector.isReady(m_listener))
         {
-            m_clients.push_back(std::move(socket));
-            // m_selector.add(m_clients.back());
-        }
-        else
-        {
-            LOG(ERROR) << "accept() error: Unable to establish connection with remote socket" << std::endl;
+            LOG(DEBUG) << "Accepting new connection" << std::endl;
+            auto socket = m_listener.accept();
+            if (socket.valid())
+            {
+                m_clients.push_back(std::move(socket));
+                // m_selector.add(m_clients.back());
+            }
+            else
+            {
+                LOG(ERROR) << "accept() error: Unable to establish connection with remote socket" << std::endl;
+            }
         }
     }
 
