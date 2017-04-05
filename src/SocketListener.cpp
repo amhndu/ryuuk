@@ -22,7 +22,7 @@
 namespace ryuuk
 {
     SocketListener::SocketListener() :
-        m_socketfd(-1)
+        Socket()
     {
         LOG(INFO) << "Created empty SocketListener" << std::endl;
     }
@@ -50,6 +50,7 @@ namespace ryuuk
         for (; p != nullptr; p = p->ai_next)
         {
             m_socketfd = socket(serverInfo->ai_family, serverInfo->ai_socktype, serverInfo->ai_protocol);
+
             if (m_socketfd < 0)
             {
                 LOG(ERROR) << "socket() error: Unable to create a socket, trying next result" << std::endl;
@@ -113,13 +114,14 @@ namespace ryuuk
 
     void SocketListener::close()
     {
-        ::close(m_socketfd);
+        close(m_socketfd);
         LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
     }
 
     SocketListener::~SocketListener()
     {
-        ::close(m_socketfd);
+        close();
+        //::close(m_socketfd);
         //LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
     }
 

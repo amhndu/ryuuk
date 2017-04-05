@@ -13,19 +13,19 @@
 #define SOCKETSTREAM_HPP
 
 
+#include "Socket.hpp"
+
 #include <cstddef>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "Log.hpp"
-
 
 namespace ryuuk
 {
 
-    class SocketStream
+    class SocketStream : public Socket
     {
     public:
 
@@ -110,9 +110,6 @@ namespace ryuuk
         inline bool valid();
 
     private:
-
-        /* Socket FD */
-        int m_socketfd;
 
         /* Socket connection info */
         struct addrinfo *m_clientInfo;

@@ -1,7 +1,7 @@
 /**
 *  Ryuuk - Simple, multi-threaded, C++ webserver
 * -----------------------------------------------
-* 
+*
 *  SockerListener
 * ----------------
 *  TCP socket which listens for incoming client
@@ -17,28 +17,29 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
+#include "Socket.hpp"
 #include "SocketStream.hpp"
 
 
 namespace ryuuk
 {
 
-    class SocketListener
+    class SocketListener : public Socket
     {
     public:
-    
+
         /**
         * Default constructor. Born this way.
-        * 
+        *
         * Creates an invalid socket listener object.
         */
         SocketListener();
-        
+
         /**
         * Destructor. Stairway to heaven.
         */
         ~SocketListener();
-        
+
         /**
         * Bind a socket on the specified port and `listen`
         * for incoming client connections, queuing atmost
@@ -50,7 +51,7 @@ namespace ryuuk
         * @return true if a socket was bound to `port`
         */
         bool listen(int port, int backlog);
-        
+
         /**
         * Accept a client connection.
         *
@@ -59,17 +60,11 @@ namespace ryuuk
                   later for HTTP requests
         */
         SocketStream accept();
-        
+
         /**
         * Destroy the listener
         */
         void close();
-        
-    private:
-    
-        /* The socket file descriptor of the TCP
-           socket of the server. */
-        int m_socketfd;
     };
 
 }
