@@ -33,7 +33,7 @@ namespace ryuuk
         static constexpr int DEFAULT_MSG_LENGTH = 4096; // bytes
 
         /**
-        * Default constructor. Creates an empty TCP
+        * Default constructor. Creates an empty/invalid TCP
         * socket object with an invalid socket.
         */
         SocketStream();
@@ -100,7 +100,7 @@ namespace ryuuk
         * @return The FD associated with this TCP socket object
         */
         inline int getSocketFd();
-        
+
         /**
         * Helper to check if this SockStream object is
         * associated to a valid TCP socket or not.
@@ -123,3 +123,4 @@ namespace ryuuk
 }
 
 #endif // SOCKETSTREAM_HPP
+

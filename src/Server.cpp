@@ -39,7 +39,7 @@ namespace ryuuk
         {
             LOG(ERROR) << "[ FATAL ] Server could not bind listener on port \'"
                        << std::to_string(server_manifest.port) << "\'. Exiting..." << std::endl;
-            exit(EXIT_FAILURE);
+            throw std::runtime_error("Server could not bind listener on port");
         }
 
         m_running = true;
@@ -116,7 +116,7 @@ namespace ryuuk
 
     void Server::run()
     {
-        LOG(INFO) << "foo" << std::endl;
+        LOG(INFO) << "Server running." << std::endl;
         while(m_running)
         {
             // Can't use SIGTERM if this line is commented out!! (or something is not printed!!)
@@ -143,12 +143,37 @@ namespace ryuuk
 
     void Server::receive()
     {
-        //std::cout << "Do some stuff" << std::endl;
+        for (auto& socket : m_clients)
+        {
+            if (m_selector.isReady(socket))
+            {
+                // screw the request.
+                std::string linend = "\r\n",
+                            html = "<html><head><title>Ryuuk Test</title></head><body><h1>Do you know L ?</h1>"
+                                   "<h2>The Gods of Death love apples</h2></body>",
+                            res = "HTTP/1.0 200 OK" + linend +
+                                  "Content-Type: text/html" + linend +
+                                  "Content-Length: " + std::to_string(html.size()) + linend +
+                                  linend +
+                                  html;
+                socket.send(res.c_str(), res.size());
+            }
+        }
     }
 
     void Server::addClient()
     {
-        std::cout << "Client added" << std::endl;
+        // if (m_selector.isReady(listener))
+        auto socket = m_listener.accept();
+        if (socket.valid())
+        {
+            m_clients.push_back(std::move(socket));
+            // m_selector.add(m_clients.back());
+        }
+        else
+        {
+            LOG(ERROR) << "accept() error: Unable to establish connection with remote socket" << std::endl;
+        }
     }
 
     void Server::shutdown()

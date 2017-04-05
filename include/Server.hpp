@@ -1,12 +1,12 @@
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <list>
-#include <memory>
-
 #include "Log.hpp"
 #include "SocketStream.hpp"
 #include "SocketListener.hpp"
+
+#include <list>
+#include <memory>
 
 namespace ryuuk
 {
@@ -45,7 +45,7 @@ namespace ryuuk
     private:
 
         SocketListener m_listener;
-        std::list<std::shared_ptr<SocketStream>> m_clients;
+        std::list<SocketStream> m_clients;
 
         bool m_running;
     };

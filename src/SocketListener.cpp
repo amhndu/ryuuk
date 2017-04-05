@@ -1,7 +1,7 @@
 /**
 *  Ryuuk - Simple, multi-threaded, C++ webserver
 * -----------------------------------------------
-* 
+*
 *  SockerListener
 * ----------------
 *  TCP socket which listens for incoming client
@@ -71,7 +71,7 @@ namespace ryuuk
                 LOG(ERROR) << "bind() error: Unable to bind socket to port \'" + std::to_string(port) + "\', trying next result" << std::endl;
                 continue;
             }
-            
+
             LOG(DEBUG) << "Successfully bound socket for listening" << std::endl;
             break;
         }
@@ -90,7 +90,7 @@ namespace ryuuk
             LOG(ERROR) << "Error in listening" << std::endl;
             return false;
         }
-        
+
         LOG(INFO) << "Now Listening for incoming requests on port \'" + std::to_string(port) + "\'" << std::endl;
         return true;
     }
@@ -100,18 +100,17 @@ namespace ryuuk
         struct addrinfo client_info;
 
         memset((void *)&client_info, 0, sizeof client_info);
-                
+
         int client_sockfd = ::accept(m_socketfd, (struct sockaddr *)client_info.ai_addr, &(client_info.ai_addrlen));
-        
+
         if (0 > client_sockfd)
         {
-            LOG(ERROR) << "accept() error: Unable to establish connection with remote socket" << std::endl;            
             return SocketStream{};
         }
-        
+
         return SocketStream{client_sockfd, client_info};
     }
-    
+
     void SocketListener::close()
     {
         ::close(m_socketfd);
