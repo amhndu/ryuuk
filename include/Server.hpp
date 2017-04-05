@@ -23,8 +23,8 @@ namespace ryuuk
 
         void run();
 
-        bool wait();
-
+//        bool wait();
+//
         void receive();
 
         void addClient();

@@ -9,20 +9,35 @@ namespace ryuuk
 {
 
     const int INVALID_SOCKET_FD = -1;
+    const unsigned DEFAULT_TIMEOUT = 5; // sec
 
     class Socket
     {
     public:
 
-        Socket();
+        Socket() : m_socketfd(INVALID_SOCKET_FD)
+        {
+        }
 
-        Socket(int socketfd);
-
-        //void setSocketFd(const int socketfd);
+        Socket(int socketfd)
+        {
+            m_socketfd = socketfd;
+        }
 
         inline int getSocketFd() const
         {
             return m_socketfd;
+        }
+
+        /**
+        * Helper to check if this SockStream object is
+        * associated to a valid TCP socket or not.
+        *
+        * @return true if a valid TCP socket is associated
+        */
+        inline bool valid()
+        {
+            return m_socketfd > 0;
         }
 
     protected:

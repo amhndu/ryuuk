@@ -39,7 +39,7 @@ namespace ryuuk
 
         while (totalSent < len)
         {
-            if (0 > (sent = ::send(getSocketFd(), (const void *)(data + totalSent), size_t(len - totalSent), 0)))
+            if (0 > (sent = ::send(m_socketfd, (const void *)(data + totalSent), size_t(len - totalSent), 0)))
             {
                 LOG(ERROR) << "send() : Error in sending data to remote client" << std::endl;
                 return totalSent;
@@ -59,7 +59,7 @@ namespace ryuuk
 
         while (totalRecvd < DEFAULT_MSG_LENGTH)
         {
-            if (0 > (recvd = recv(getSocketFd(), m_rwbuffer + totalRecvd,
+            if (0 > (recvd = recv(m_socketfd, m_rwbuffer + totalRecvd,
                         DEFAULT_MSG_LENGTH - totalRecvd, 0)))
             {
                 LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
@@ -72,11 +72,6 @@ namespace ryuuk
         LOG(DEBUG) << "Recevied data from remote client" << std::endl;
 
         return totalRecvd;
-    }
-
-    bool SocketStream::valid()
-    {
-        return getSocketFd() > 0;
     }
 
 }
