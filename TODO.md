@@ -9,6 +9,8 @@ General
     2. Design a high-level, abstraction of a TCP listener (WIP)
     3. Design a high-level, abstraction of a TCP selector
 
+* Access restriction (to sensitive files & directories)
+
 
 Logging
 -------
