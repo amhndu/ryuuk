@@ -141,12 +141,24 @@ namespace ryuuk
             if (m_selector.isReady(*sock_i))
             {
                 LOG(DEBUG) << "Recieved a request" << std::endl;
-                if (sock_i->receive() <= 0)
+                int recieved = -1;
+                const char* buffer = nullptr;
+                std::tie(recieved, buffer) = sock_i->receive();
+
+                if (recieved == 0)
                 {
                     LOG(DEBUG) << "Removing socket " << sock_i->getSocketFd() << std::endl;
                     m_selector.remove(*sock_i);
                     sock_i = m_clients.erase(sock_i);
                     continue;
+                }
+                else if (recieved < 0)
+                {
+                    LOG(ERROR) << "Receive error with socket " << sock_i->getSocketFd() << " and errno " << errno << std::endl;
+                }
+                else
+                {
+                    LOG(DEBUG) << "Dumping recieved packet from " << sock_i->getSocketFd() << std::endl << buffer << std::endl;
                 }
 
                 // TODO parse request

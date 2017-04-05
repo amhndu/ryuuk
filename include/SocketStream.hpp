@@ -92,7 +92,7 @@ namespace ryuuk
         * Note: This method blocks the current thread
         * until all the data has been received.
         */
-        int receive();
+        std::pair<int, const char*> receive();
 
     private:
 

@@ -54,7 +54,7 @@ namespace ryuuk
         return totalSent;
     }
 
-    int SocketStream::receive()
+    std::pair<int, const char*> SocketStream::receive()
     {
         int recvd = 0;
 
@@ -62,12 +62,11 @@ namespace ryuuk
                     DEFAULT_MSG_LENGTH, 0)))
         {
             LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
-
         }
         else
             LOG(DEBUG) << "Recevied data from remote client" << std::endl;
 
-        return recvd;
+        return std::make_pair(recvd, m_rwbuffer);
     }
 
 }

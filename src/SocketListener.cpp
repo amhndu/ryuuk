@@ -24,7 +24,7 @@ namespace ryuuk
     SocketListener::SocketListener() :
         Socket()
     {
-        LOG(INFO) << "Created empty SocketListener" << std::endl;
+        LOG(DEBUG) << "Created empty SocketListener" << std::endl;
     }
 
     bool SocketListener::listen(int port, int backlog)
