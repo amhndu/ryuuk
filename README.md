@@ -21,6 +21,8 @@ Becuase why not ?
 * Full HTTP/1.1 and HTTP/2 support (implement RFC 7540)
 * World domination 
 
+For a detailed more detailed keikaku, please see the [TODO](TODO.md)
+
 ## References
 
 https://tools.ietf.org/html/rfc723[0-7]  

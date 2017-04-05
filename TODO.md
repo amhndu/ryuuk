@@ -1,5 +1,6 @@
 # Ryuuk TODO
 
+These are Ryuuk\'s short term and long term goals.
 
 General
 -------
@@ -22,3 +23,10 @@ Concurrency
 -----------
 
 TBD
+
+
+Unit testing
+------------
+
+* Write custom, well-defined tests
+* Create a automated build system (e.g. using Travis Ci)
