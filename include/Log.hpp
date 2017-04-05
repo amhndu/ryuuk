@@ -1,5 +1,5 @@
 /*
- *  Ryuuk 
+ *  Ryuuk
  * -------
  *  Ryuuk is an upcoming webserver written by Shinigamis
  *
@@ -35,40 +35,40 @@ namespace ryuuk
         INFO  ,
         DEBUG
     };
-    
+
     static inline std::string toLevelString(Level lvl)
     {
-        switch (lvl)
-        {
-            case ERROR: return "[ ERROR ]";
-            case INFO : return "[ INFO  ]";
-            case DEBUG: return "[ DEBUG ]";
-            default   : return "";
-        }
+        static std::string levelMap[] = {"[ERROR]", "[INFO]", "[DEBUG]"};
+
+        auto index = static_cast<int>(lvl);
+        if (lvl <= DEBUG)
+            return levelMap[index];
+
+        return "";
     }
-    
+
     class Log
     {
     public:
-    
+
         ~Log();
-        
+
         void setLogStream(std::ostream& stream);
-                
+
         Log& setLevel(Level level);
-        
+
         Level getLevel();
 
         std::ostream& getStream();
-        
+
         static Log& get();
-        
+
     private:
-        
+
         Level m_logLevel;
-        
+
         std::ostream* m_logStream;
-        
+
         static std::unique_ptr<Log> m_instance;
     };
 

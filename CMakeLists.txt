@@ -20,11 +20,10 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/;${CMAKE_MODULE_PATH};$
 # Add sources
 file(GLOB SOURCES
     "${PROJECT_SOURCE_DIR}/src/*.cpp"
-    "${PROJECT_SOURCE_DIR}/src/*.cxx"
 )
 
 # Copy resources
-# file(COPY foo DESTINATION .)
+file(COPY ryuuk.conf DESTINATION .)
 
 # Will add __FILENAME__ macros for all source files, which is the filename without full find_path
 # Courtesy of SO
