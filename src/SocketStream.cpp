@@ -20,10 +20,17 @@ namespace ryuuk
         LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
+    SocketStream::SocketStream(SocketStream&& other) : Socket(other.m_socketfd),
+                                                       m_clientAddr(other.m_clientAddr)
+    {
+        other.m_socketfd = INVALID_SOCKET_FD;
+    }
+
+
     SocketStream::~SocketStream()
     {
         //freeaddrinfo(m_clientInfo);
-        LOG(DEBUG) << "Destroyed SocketStream object" << std::endl;
+        LOG(DEBUG) << "Destroyed SocketStream object: " << m_socketfd << std::endl;
     }
 
     bool SocketStream::create()
@@ -63,8 +70,10 @@ namespace ryuuk
         {
             LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
         }
-        else
+        else if (recvd > 0)
             LOG(DEBUG) << "Recevied data from remote client" << std::endl;
+        else
+            LOG(DEBUG) << "Socket " << m_socketfd << " disconnected." << std::endl;
 
         return std::make_pair(recvd, m_rwbuffer);
     }

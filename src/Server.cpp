@@ -140,7 +140,6 @@ namespace ryuuk
         {
             if (m_selector.isReady(*sock_i))
             {
-                LOG(DEBUG) << "Recieved a request" << std::endl;
                 int recieved = -1;
                 const char* buffer = nullptr;
                 std::tie(recieved, buffer) = sock_i->receive();
@@ -158,7 +157,7 @@ namespace ryuuk
                 }
                 else
                 {
-                    LOG(DEBUG) << "Dumping recieved packet from " << sock_i->getSocketFd() << std::endl << buffer << std::endl;
+                    LOG(DEBUG) << "Received request from " << sock_i->getSocketFd() << ". Dump:\n" << buffer << std::endl;
                 }
 
                 // TODO parse request

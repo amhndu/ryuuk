@@ -29,4 +29,9 @@ Unit testing
 ------------
 
 * Write custom, well-defined tests
-* Create a automated build system (e.g. using Travis Ci)
+* Setup automated build system (e.g. using Travis Ci)
+
+FIXME
+-----------
+
+* Close socket fds

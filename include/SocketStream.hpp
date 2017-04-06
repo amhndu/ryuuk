@@ -39,6 +39,17 @@ namespace ryuuk
         SocketStream();
 
         /**
+         * Delete copy assignment and copy constructor
+         */
+        SocketStream(const SocketStream& other) = delete;
+        SocketStream& operator=(const SocketStream& other) = delete;
+
+        /*
+         * Move constructor
+         */
+        SocketStream(SocketStream&& other);
+
+        /**
         * Create a TCP socket object with a valid
         * network socket.
         *
