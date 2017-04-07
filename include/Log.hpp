@@ -5,8 +5,6 @@
  *
  * Log - The logging class for Ryuuk
  *
- * TODO: Everything
- *
  */
 
 #ifndef LOG_HPP
@@ -18,6 +16,8 @@
 #include <fstream>
 #include <memory>
 #include <cstring>
+#include <thread>
+#include <mutex>
 
 #ifndef __FILENAME__
     #define __FILENAME__ __FILE__
@@ -47,6 +47,28 @@ namespace ryuuk
         return "";
     }
 
+    class LockedStream
+    {
+    public:
+        LockedStream(std::ostream& out, std::mutex& mutex);
+        LockedStream(LockedStream&& other) = default;
+        LockedStream(const LockedStream& other) = delete;
+        ~LockedStream();
+
+        template <class T>
+        LockedStream& operator<<(T&& t)
+        {
+            m_out << std::forward<T>(t);
+            return *this;
+        }
+
+        // Special overload for functions (to allow manipualtors like endl etc)
+        LockedStream& operator<<(std::ostream& (*manip)(std::ostream&));
+    private:
+        std::ostream& m_out;
+        std::mutex& m_mutex;
+    };
+
     class Log
     {
     public:
@@ -59,7 +81,7 @@ namespace ryuuk
 
         Level getLevel();
 
-        std::ostream& getStream();
+        LockedStream getStream();
 
         static Log& get();
 
@@ -68,7 +90,7 @@ namespace ryuuk
         Level m_logLevel;
 
         std::ostream* m_logStream;
-
+        std::mutex m_mutex;
         static std::unique_ptr<Log> m_instance;
     };
 

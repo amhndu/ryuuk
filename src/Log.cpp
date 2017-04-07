@@ -4,6 +4,23 @@ namespace ryuuk
 {
     std::unique_ptr<Log> Log::m_instance = nullptr;
 
+    LockedStream::LockedStream(std::ostream& out, std::mutex& mutex) : m_out(out),
+                                                                      m_mutex(mutex)
+    {
+        m_mutex.lock();
+    }
+
+    LockedStream::~LockedStream()
+    {
+        m_mutex.unlock();
+    }
+
+    LockedStream& LockedStream::operator<<(std::ostream& (*manip)(std::ostream&))
+    {
+        m_out << manip;
+        return *this;
+    }
+
     Log::~Log()
     {
         //m_logStream->flush();
@@ -15,10 +32,11 @@ namespace ryuuk
             m_instance.reset(new Log);
         return *m_instance;
     }
-    
-    std::ostream& Log::getStream()
+
+    LockedStream Log::getStream()
     {
-        return *m_logStream;
+//         return *m_logStream;
+        return LockedStream{*m_logStream, m_mutex};
     }
 
     void Log::setLogStream(std::ostream& stream)
