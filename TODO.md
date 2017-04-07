@@ -11,13 +11,7 @@ General
     3. Design a high-level, abstraction of a TCP selector
 
 * Access restriction (to sensitive files & directories)
-
-
-Logging
--------
-
-* Make the current logger module thread-safe
-
+* After a request, properly shutdown the connection before close()ing (ie. removing the object)
 
 Concurrency
 -----------

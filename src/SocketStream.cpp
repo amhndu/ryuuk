@@ -1,8 +1,6 @@
 #include "SocketStream.hpp"
 
-#include <iostream>
-#include <cstdlib>
-#include <cstring>
+#include <unistd.h>
 
 namespace ryuuk
 {
@@ -14,9 +12,6 @@ namespace ryuuk
     SocketStream::SocketStream(int sockfd, sockaddr_storage& sockinfo) : Socket(sockfd),
                                                                          m_clientAddr(sockinfo)
     {
-        //m_clientInfo = new struct addrinfo;
-        //memcpy(m_clientInfo, &sockinfo, sizeof m_clientInfo);
-
         LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
@@ -29,21 +24,26 @@ namespace ryuuk
 
     SocketStream::~SocketStream()
     {
-        //freeaddrinfo(m_clientInfo);
-        LOG(DEBUG) << "Destroyed SocketStream object: " << m_socketfd << std::endl;
+        if (valid())
+        {
+            LOG(DEBUG) << "Destroyed SocketStream object: " << m_socketfd << std::endl;
+            close(m_socketfd);
+        }
     }
 
     bool SocketStream::create()
     {
+        return false;
     }
 
     bool SocketStream::drop()
     {
+        return false;
     }
 
-    size_t SocketStream::send(const char* data, size_t len)
+    int SocketStream::send(const char* data, size_t len)
     {
-        size_t totalSent = 0, sent = 0;
+        int totalSent = 0, sent = 0;
 
         while (totalSent < len)
         {

@@ -88,7 +88,7 @@ namespace ryuuk
         * NOTE: This funciton blocks the current
         * thread until all the data has been sent.
         */
-        std::size_t send(const char* data, std::size_t len);
+        int send(const char* data, std::size_t len);
         //int send(SocketStream& remote);
 
         /**
