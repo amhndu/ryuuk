@@ -1,7 +1,10 @@
 #include "Server.hpp"
+#include "HTTP.hpp"
 
 #include <fstream>
 #include <algorithm>
+#include <sstream>
+#include <iomanip>
 
 namespace ryuuk
 {
@@ -52,6 +55,19 @@ namespace ryuuk
     {
         //m_listener.~SocketListener(); : Undefined behaviour! ouch!
         LOG(INFO) << "Server object destroyed." << std::endl;
+    }
+
+    std::string conv(const std::string s)
+    {
+        std::stringstream r;
+        for (auto&& c : s)
+        {
+            if (isprint(c))
+                r << c;
+            else
+                r << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+        }
+        return r.str();
     }
 
     void Server::parseConfigFile()
@@ -157,18 +173,13 @@ namespace ryuuk
                 }
                 else
                 {
-                    LOG(DEBUG) << "Received request from " << sock_i->getSocketFd() << ". Dump:\n" << buffer << std::endl;
+                    LOG(DEBUG) << "Received request from " << sock_i->getSocketFd() << ". Dump:\n" <<
+                                conv({buffer, buffer+recieved}) << std::endl;
                 }
 
-                // TODO parse request
-                std::string linend = "\r\n",
-                            html = "<html><head><title>Ryuuk Test</title></head><body><h1>Do you know L ?</h1>"
-                                   "<h2>The Gods of Death love apples</h2></body>",
-                            res = "HTTP/1.0 200 OK" + linend +
-                                  "Content-Type: text/html" + linend +
-                                  "Content-Length: " + std::to_string(html.size()) + linend +
-                                  linend +
-                                  html;
+                HTTP http({buffer, buffer + recieved});
+                std::string res(http.buildResponse());
+
                 if (sock_i->send(res.c_str(), res.size()) != res.size())
                 {
                     LOG(INFO) << "Couldn't send HTTP response" << std::endl;
