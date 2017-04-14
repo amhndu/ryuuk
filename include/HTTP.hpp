@@ -23,6 +23,7 @@ namespace ryuuk
         void sendInternalError();
         void sendNotFound();
         void sendPermissionDenied();
+        bool sendDirectoryListing(const std::string& path);
         std::string m_response;
     };
 }

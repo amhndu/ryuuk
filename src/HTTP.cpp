@@ -2,6 +2,8 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <dirent.h>
 
 #include "HTTP.hpp"
 #include "Log.hpp"
@@ -112,9 +114,15 @@ namespace ryuuk
 
                 if (type == Directory)
                 {
-                    location.append("/index.html");
+                    // location.append("/index.html");
                     LOG(DEBUG) << "Append index.html to path" << std::endl;
-                    type = getResourceType(location);
+                    type = getResourceType(location + "/index.html");
+                    if (type == Regular)
+                        location += "/index.html";
+                    else if (type == NonExistent)
+                        type = Directory;
+                    else
+                        LOG(ERROR) << "Here's ya edge case, what do ?" << std::endl; // TODO what do ?
                 }
 
                 switch (type)
@@ -124,8 +132,8 @@ namespace ryuuk
                             sendInternalError();
                         break;
                     case Directory:
-                        LOG(ERROR) << "Here's ya edge case, still a directory" << std::endl;
-                        sendInternalError();
+                        if (!sendDirectoryListing(location))
+                            sendInternalError();
                         break;
                     case PermissionDenied:
                         sendPermissionDenied();
@@ -193,6 +201,7 @@ namespace ryuuk
 
     void HTTP::sendNotFound()
     {
+        // Possibly read this html template from config or some other file ?
         const std::string html = "<html><head><title>Ryuuk</title></head><body><h1>It's a 404</h1><h2>Light got to this location before you, unfortunately.</h2></body>";
         m_response = "HTTP/1.0 404 Not Found\r\n"
                      "Content-Type: text/html\r\n"
@@ -207,4 +216,46 @@ namespace ryuuk
         m_response = "HTTP/1.0 403 Forbidden\r\n\r\n";
         LOG(INFO) << "Sent forbidden response" << std::endl;
     }
+
+    bool HTTP::sendDirectoryListing(const std::string& path)
+    {
+        // Possibly read these from config or some other file ?
+        const std::string html_template = "<html><head><title>Directory Listing for DIR</title></head><body><h1>DIR</h1><ul>LIST</ul></body>";
+        const std::string entry_template = "<li><a href=\"URL\">NAME</a></li>";
+
+        m_response =  "HTTP/1.0 200 OK\r\n";
+        m_response += "Connection: close\r\n" +
+        m_response += "Content-Type: text/html\r\n";
+
+        // TODO Regex replace is overkill for this, possibly replace with something more efficient ?
+        std::string html = std::regex_replace(html_template, std::regex("DIR"), path);
+        std::string listing_buf;
+
+        DIR *dir;
+        dirent *ep;
+        dir = opendir(path.c_str());
+        if (dir != nullptr)
+        {
+            while (ep = readdir(dir))
+            {
+                listing_buf.append(std::regex_replace(
+                                        std::regex_replace(entry_template, std::regex("NAME"), {ep->d_name}),
+                                        std::regex("URL"),
+                                        path + "/" + ep->d_name));
+            }
+            closedir(dir);
+
+            html = std::regex_replace(html, std::regex("LIST"), listing_buf);
+            m_response += "Content-Length: " + std::to_string(html.size());
+            m_response += "\r\n\r\n";
+            m_response += html;
+        }
+        else
+        {
+            LOG(ERROR) << "Couldn't open directory " << path << " to send directory listing" << std::endl;
+            return false;
+        }
+        return true;
+    }
+
 }
