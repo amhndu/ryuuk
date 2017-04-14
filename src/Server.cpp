@@ -65,7 +65,7 @@ namespace ryuuk
             if (isprint(c))
                 r << c;
             else
-                r << "\\x" << std::hex << std::setw(2) << std::setfill('0') << +c;
+                r << "\\" << std::oct << std::setw(3) << std::setfill('0') << +c;
         }
         return r.str();
     }
@@ -173,12 +173,14 @@ namespace ryuuk
                 }
                 else
                 {
-                    LOG(DEBUG) << "Received request from " << sock_i->getSocketFd() << ". Dump:\n" <<
-                                conv({buffer, buffer+recieved}) << std::endl;
+                    LOG(DEBUG) << "Received request from " << sock_i->getSocketFd() << /*". Dump:\n" <<
+                                conv({buffer, buffer+recieved}) <<*/ std::endl;
                 }
 
-                HTTP http({buffer, buffer + recieved});
-                std::string res(http.buildResponse());
+                HTTP http;
+                std::string res(http.buildResponse({buffer, buffer + recieved}));
+//                 LOG(DEBUG) << "Sending response to client " << sock_i->getSocketFd() << ". Dump:\n" <<
+//                                 conv(res) << std::endl;
 
                 if (sock_i->send(res.c_str(), res.size()) != res.size())
                 {

@@ -8,10 +8,8 @@ namespace ryuuk
     class HTTP
     {
     public:
-        HTTP(const std::string& request);
-        std::string buildResponse();
+        std::string buildResponse(const std::string& request);
     private:
-        const std::string& m_request;
     };
 }
 
