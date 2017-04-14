@@ -10,6 +10,20 @@ namespace ryuuk
     public:
         std::string buildResponse(const std::string& request);
     private:
+        enum FileType
+        {
+            Regular,
+            Directory,
+            PermissionDenied,
+            NonExistent,
+            Other,      // Devices, pipes, sockets etc
+        };
+        FileType getResourceType(const std::string& location);
+        bool sendResource(const std::string& location);
+        void sendInternalError();
+        void sendNotFound();
+        void sendPermissionDenied();
+        std::string m_response;
     };
 }
 
