@@ -2,6 +2,10 @@
 
 Ryuuk is a prospective concurrent web-server written in C++.
 
+POSIX environment is assumed.  It's not like people use non-POSIX environments anyway.
+
+Windows, you ask ? Yeah, they let fresh air into our rooms, real handy.
+
 ## Why
 
 Becuase why not ?
@@ -19,12 +23,12 @@ Becuase why not ?
 #### Long term
 
 * Full HTTP/1.1 and HTTP/2 support (implement RFC 7540)
-* World domination 
+* World domination
 
 For a more detailed keikaku, please see the [TODO](TODO.md)
 
 ## References
 
-https://tools.ietf.org/html/rfc723[0-7]  
-https://tools.ietf.org/html/rfc2616  
-http://www2005.org/cdrom/docs/p730.pdf  
+https://tools.ietf.org/html/rfc723[0-7]
+https://tools.ietf.org/html/rfc2616
+http://www2005.org/cdrom/docs/p730.pdf
