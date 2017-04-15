@@ -29,4 +29,6 @@ Unit testing
 FIXME
 -----------
 
+* Better handling a socket spamming a lot of data ? (simulate by nc localhost 8000 < /dev/random)
+  Right now, it's sort of poorly handled (?)
 * TODOs spread throughout the code

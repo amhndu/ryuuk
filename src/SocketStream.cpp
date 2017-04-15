@@ -70,7 +70,7 @@ namespace ryuuk
         if (0 > (recvd = recv(m_socketfd, m_rwbuffer,
                     DEFAULT_MSG_LENGTH, 0)))
         {
-            LOG(ERROR) << "recv() : Error in receving data from remote client" << std::endl;
+            LOG(ERROR) << "recv() : Error in receving data from remote client. errno: " << errno << std::endl;
         }
         else if (recvd > 0)
             LOG(DEBUG) << "Recevied data from remote client" << std::endl;

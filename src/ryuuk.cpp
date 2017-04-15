@@ -9,17 +9,14 @@
 #include "Log.hpp"
 #include "Server.hpp"
 
-// If POSIX compliant OS, we bind SIGINT to shutdown the application
-#if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
 
-    #include <signal.h>
+#include <signal.h>
 
-    namespace
-    {
-        ryuuk::Server *serverPtr = nullptr;
-    }
-
-#endif
+// Bind the global pointer in an anomyous namespace (thus make it available only in this file)
+namespace
+{
+    ryuuk::Server *serverPtr = nullptr;
+}
 
 #ifndef LOG_LEVEL
 #define LOG_LEVEL INFO
@@ -51,24 +48,25 @@ int main(int argc, char **argv)
 
     ryuuk::Server Ryuuk;
 
-    // If POSIX compliant OS, we bind SIGINT to shutdown the application
-    #if defined (__unix__) || (defined (__APPLE__) && defined (__MACH__))
+    // Set the global ptr for the handler
+    serverPtr = &Ryuuk;
 
-        // Set the global ptr for the handler
-        serverPtr = &Ryuuk;
+    // struct keyword required to remove ambiguity with the function
+    struct sigaction sa;
 
-        // struct keyword required to remove ambiguity with the function
-        struct sigaction sa;
+    // Shutdown server when SIGINT or SIGTERM is received
+    sa.sa_handler =
+    [](int sig){ if(serverPtr) serverPtr->shutdown(); };
 
-        // Shutdown server when SIGINT or SIGTERM is received
-        sa.sa_handler =
-            [](int sig){ if(serverPtr) serverPtr->shutdown(); };
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, nullptr);
+    sigaction(SIGTERM, &sa, nullptr);
 
-        sa.sa_flags = 0;
-        sigaction(SIGINT, &sa, NULL);
-        sigaction(SIGTERM, &sa, NULL);
-
-    #endif
+    // LOG and carry on if SIGPIPE is received
+    // That is, some socket was abrutpty closed that we didn't notice and kept trying to writing to.
+    struct sigaction sa_pipe;
+    sa_pipe.sa_handler = [](int sig) { LOG(ryuuk::ERROR) << "Received SIGPIPE" << std::endl; };
+    sigaction(SIGPIPE, &sa_pipe, nullptr);
 
     Ryuuk.run();
 

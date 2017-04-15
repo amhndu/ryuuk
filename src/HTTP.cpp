@@ -60,8 +60,6 @@ namespace ryuuk
         return str;
     }
 
-
-
     HTTP::FileType HTTP::getResourceType(const std::string& location)
     {
         struct stat statbuf;
@@ -221,7 +219,7 @@ namespace ryuuk
     bool HTTP::sendDirectoryListing(const std::string& path)
     {
         // Possibly read these from config or some other file ?
-        const std::string html_template = "<html>\n<head><title>Directory Listing for DIR</title></head>\n<body>\n<h1>Index of DIR</h1>\n<ul>\nLIST</ul>\n</body>\n</html>";
+        const std::string html_template = "<html>\n<head><title>Directory Listing for DIR</title></head>\n<body>\n<h1>Index of DIR</h1><hr/>\n<ul>\nLIST</ul>\n</body>\n</html>";
         const std::string entry_template = "<li><a href=\"URL\">NAME</a></li>\n";
 
         m_response =  "HTTP/1.0 200 OK\r\n";

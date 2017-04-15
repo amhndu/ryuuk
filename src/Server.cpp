@@ -40,7 +40,7 @@ namespace ryuuk
             LOG(INFO) << "Successfully bound listener on port \'" + std::to_string(server_manifest.port) + "\'." << std::endl;
         else
         {
-            LOG(ERROR) << "[ FATAL ] Server could not bind listener on port \'"
+            LOG(ERROR) << "[FATAL] Server could not bind listener on port \'"
                        << std::to_string(server_manifest.port) << "\'. Exiting..." << std::endl;
             throw std::runtime_error("Server could not bind listener on port");
         }
@@ -136,13 +136,10 @@ namespace ryuuk
         LOG(INFO) << "Server running." << std::endl;
         while(m_running)
         {
-            // Can't use SIGTERM if this line is commented out!! (or something is not printed!!)
-
-            //LOG(INFO) << "foo" << std::endl;
-
             // Wait until some socket is active
             if (m_selector.wait())
             {
+                // Try doing either
                 addClient();
                 receive();
             }
@@ -184,7 +181,10 @@ namespace ryuuk
 
                 if (sock_i->send(res.c_str(), res.size()) != res.size())
                 {
-                    LOG(INFO) << "Couldn't send HTTP response" << std::endl;
+                    LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
+                    // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
+                    sock_i = m_clients.erase(sock_i);
+                    continue;
                 }
 
             }
