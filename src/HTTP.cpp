@@ -10,6 +10,7 @@
 
 namespace ryuuk
 {
+    std::map<std::string, std::string> HTTP::mimeTypes = {};
     /*
     * Sanitize path (relative to current working directory)
     * Path above the current directory results in a domain_error being raised
@@ -83,17 +84,35 @@ namespace ryuuk
 
     std::string HTTP::buildResponse(const std::string& request)
     {
-        const std::regex request_line (R"(^([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n))");
-        /* Regex: (Method) whitespace (location) whitespace HTTP/(version) (line-end) headers */
+        /*
+        * Part of the pattern          Remark ([x] means this is capture group number x)
+        * --------------------------------------------------------------------------------------------------------------
+        * ([A-Z]+)                     Method, in all caps  [1]
+        * [ \t]+                       Sequence of spaces/tabs
+        * (.+)                         Location, anything goes except \r, \n, U+2029 and U+2028 [2]
+        * [ \t]+                       Sequence of spaces/tabs
+        * HTTP/                        HTTP/
+        * (\d\.\d)                     Match X.Y where X and Y are digits [3]
+        * (\r?\n)                      Either \r\n or \n (we are being lenient) [4]
+        * ((?:.|[\r\nu2029u2028])*\4)  Header, Anything goes each line followed by the same line-ending as the request line [5]
+        *                              (we're expecting the client be consistent with their line ending)
+        *                              (replace \4 with \r?\n to be more lenient)
+        * \4                           Empty line which marks the end of the header
+        * (.|[\r\nu2029u2028])*        Body. Anything goes. [6]
+        */
+        const std::regex request_pattern (R"(([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n)((?:.|[\r\nu2029u2028])*\4)\4(.|[\r\nu2029u2028])*)");
 
         // TODO Read other header fields
+        // TODO Don't assume GET as the method and handle other methods.
         std::smatch matches;
-        if (std::regex_search(request, matches, request_line))
+        if (std::regex_match(request, matches, request_pattern))
         {
             std::string method      = matches[1],
                         location    = matches[2],
                         version     = matches[3],
-                        line_end    = matches[4];
+                        line_end    = matches[4],
+                        headers     = matches[5],
+                        body        = matches[6];
 
             LOG(DEBUG) << "Request line parsed: " << method << " " << location << " HTTP/" << version << std::endl;
 
@@ -110,14 +129,19 @@ namespace ryuuk
                 FileType type = getResourceType(location);
                 LOG(DEBUG) << "Resource Type: " << type << std::endl;
 
+                // Here cases like "http://example.com/about" are handled.
+                // the URL "http://example.com/about" is resolved to
+                // "http://example.com/about/index.html"
                 if (type == Directory)
                 {
+                    // Check If an index.html file is present in the path,
                     type = getResourceType(location + "/index.html");
                     if (type == Regular)
                     {
                         location += "/index.html";
                         LOG(DEBUG) << "Append index.html to path" << std::endl;
                     }
+                    // If no index.html is present in the path, it's a normal directory
                     else if (type == NonExistent)
                         type = Directory;
                     else
@@ -170,17 +194,29 @@ namespace ryuuk
             m_response += "Connection: close\r\n" +
             m_response += "Content-Type: ";
 
-            auto ext = location.substr(location.find_last_of('.'));
+            //auto ext = location.substr(location.find_last_of('.'));
+            auto ext = location.substr(location.find_last_of('/'));
+            auto pos = ext.find_last_of('.');
+            if (pos != std::string::npos)
+                ext = ext.substr(pos + 2);
+            else
+                ext = {};
 
             // TODO Read MIME types from a config file
-            if (ext == ".html")
-                m_response += "text/html\r\n";
-            else if (ext == ".css")
-                m_response += "text/css\r\n";
-            else if (ext == ".ico")
-                m_response += "image/x-icon\r\n";
+//            if (ext == ".html")
+//                m_response += "text/html\r\n";
+//            else if (ext == ".css")
+//                m_response += "text/css\r\n";
+//            else if (ext == ".ico")
+//                m_response += "image/x-icon\r\n";
+//            else
+//                m_response += "application/octet-stream\r\n";
+
+            auto it = mimeTypes.find(ext);
+            if (it != mimeTypes.end())
+                m_response += it->second + "\r\n";
             else
-                m_response += "application/octet-stream\r\n";
+                m_response += mimeTypes.find("bin")->second + "\r\n";
 
             std::string payload(std::istreambuf_iterator<char>(file), {});
             m_response += "Content-Length: " + std::to_string(payload.size());
@@ -219,7 +255,7 @@ namespace ryuuk
     bool HTTP::sendDirectoryListing(const std::string& path)
     {
         // Possibly read these from config or some other file ?
-        const std::string html_template = "<html>\n<head><title>Directory Listing for DIR</title></head>\n<body>\n<h1>Index of DIR</h1><hr/>\n<ul>\nLIST</ul>\n</body>\n</html>";
+        const std::string html_template = "<html>\n<head><title>Directory Listing for DIR</title></head>\n<body>\n<h2>Index of DIR</h2><hr/>\n<ul>\nLIST</ul>\n<hr><i>Hosted using <a href=\"https://github.com/amhndu/ryuuk\">Ryuuk</a></i></body>\n</html>";
         const std::string entry_template = "<li><a href=\"URL\">NAME</a></li>\n";
 
         m_response =  "HTTP/1.0 200 OK\r\n";

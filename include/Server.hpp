@@ -7,6 +7,7 @@
 #include "SocketSelector.hpp"
 
 #include <list>
+#include <map>
 #include <memory>
 
 namespace ryuuk
@@ -20,6 +21,8 @@ namespace ryuuk
 
         ~Server();
 
+        void init();
+
         void parseConfigFile();
 
         void run();
@@ -30,15 +33,19 @@ namespace ryuuk
 
         void shutdown();
 
+        void setConfigFile(const std::string& file);
+
     public:
 
         const std::string SERVER_CONFIG_FILE = "ryuuk.conf";
+        std::string m_configFile;
 
         struct manifest
         {
             std::string ip;
             unsigned    port;
             unsigned    backlog;
+            std::map<std::string, std::string> mime_types;
         } server_manifest;
 
     private:

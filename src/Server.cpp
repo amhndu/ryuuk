@@ -28,10 +28,14 @@ namespace ryuuk
 
     Server::Server() : m_listener() ,
                        m_clients()  ,
-                       m_running(true)
+                       m_running(true),
+                       m_configFile{SERVER_CONFIG_FILE}
     {
         LOG(INFO) << "Server object created." << std::endl;
+    }
 
+    void Server::init()
+    {
         LOG(INFO) << "Parsing server configuration file..." << std::endl;
         parseConfigFile();
 
@@ -72,18 +76,18 @@ namespace ryuuk
 
     void Server::parseConfigFile()
     {
-        std::ifstream configFile(SERVER_CONFIG_FILE, std::ios::in);
+        std::ifstream configFile(m_configFile, std::ios::in);
 
         if (!configFile.good() || !configFile.is_open())
         {
             LOG(ERROR) << "[FATAL] Ryuuk config file error: Unable to read config file! Terminating..." << std::endl;
-            throw std::runtime_error("[FATAL] \'" + SERVER_CONFIG_FILE + "\': No such file exists or it is corrupted!");
+            throw std::runtime_error("[FATAL] \'" + m_configFile + "\': No such file exists or it is corrupted!");
         }
 
         // Read config options...
         std::string line;
         const std::string fields[] = {"IP", "Port", "Connections"};
-        enum { Connection, None } section = None;
+        enum { Connection, MIME, None } section = None;
         unsigned int line_no = 0;
         while (std::getline(configFile, line))
         {
@@ -94,9 +98,16 @@ namespace ryuuk
                 continue;
             else if (line == "[Connection]")
             {
+                LOG(DEBUG) << "Parsing connection configuration options..." << std::endl;
                 section = Connection;
             }
-            else if (section == Connection || section == None) // Being lenient, whatevs be the section
+            else if (line == "[MIME]")
+            {
+                LOG(DEBUG) << "Parsing MIME configuration options..." << std::endl;
+                section = MIME;
+            }
+            //else if (section == Connection || section == None) // Being lenient, whatevs be the section
+            else if (section == Connection)
             {
                 auto divider = line.find("=");
                 std::string field  = ltrim(rtrim(line.substr(0, divider)));
@@ -122,13 +133,25 @@ namespace ryuuk
                     LOG(INFO) << "Invalid value in configuration file at line " <<  line_no << std::endl;
                 }
             }
+            else if (section == MIME)
+            {
+                auto divider = line.find("=");
+                std::string field  = ltrim(rtrim(line.substr(0, divider)));
+                std::string value = ltrim(rtrim(line.substr(divider + 1)));
+
+                server_manifest.mime_types[field] = value;
+
+                LOG(DEBUG) << "Added MIME type: " + field + ": " + value << std::endl;
+            }
             else
                 LOG(ERROR) << "Invalid line in key configuration at Line " << line_no << std::endl;
 
             ++line_no;
         }
 
-        LOG(INFO) << "Parsed and applied server configuration from \'" + SERVER_CONFIG_FILE << "\'." << std::endl;
+        LOG(INFO) << "Parsed and applied server configuration from \'" + m_configFile << "\'." << std::endl;
+
+        HTTP::mimeTypes = server_manifest.mime_types;
     }
 
     void Server::run()
@@ -214,6 +237,12 @@ namespace ryuuk
     void Server::shutdown()
     {
         m_running = false;
+    }
+
+    void Server::setConfigFile(const std::string& file)
+    {
+        m_configFile = file;
+        LOG(INFO) << "Ryuuk configuration file set to \'" + file + "\'" << std::endl;
     }
 
 }

@@ -2,14 +2,20 @@
 #define HTTP_H
 
 #include <string>
+#include <map>
 
 namespace ryuuk
 {
     class HTTP
     {
     public:
+
+        static std::map<std::string, std::string> mimeTypes;
+
         std::string buildResponse(const std::string& request);
+
     private:
+
         enum FileType
         {
             Regular,
@@ -18,12 +24,19 @@ namespace ryuuk
             NonExistent,
             Other,      // Devices, pipes, sockets etc
         };
+
         FileType getResourceType(const std::string& location);
+
         bool sendResource(const std::string& location);
+
         void sendInternalError();
+
         void sendNotFound();
+
         void sendPermissionDenied();
+
         bool sendDirectoryListing(const std::string& path);
+
         std::string m_response;
     };
 }
