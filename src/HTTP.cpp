@@ -4,13 +4,26 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <dirent.h>
-
+#include <algorithm>
 #include "HTTP.hpp"
 #include "Log.hpp"
 
 namespace ryuuk
 {
     std::map<std::string, std::string> HTTP::mimeTypes = {};
+
+    std::string replaceAll(const std::string& str, const std::string& key, const std::string& replacement)
+    {
+        std::string result {str};
+        std::size_t i = 0;
+        while ((i = result.find(key, i)) != std::string::npos)
+        {
+            result.replace(i, key.size(), replacement);
+            i += replacement.size();
+        }
+        return result;
+    }
+
     /*
     * Sanitize path (relative to current working directory)
     * Path above the current directory results in a domain_error being raised
@@ -94,13 +107,16 @@ namespace ryuuk
         * HTTP/                        HTTP/
         * (\d\.\d)                     Match X.Y where X and Y are digits [3]
         * (\r?\n)                      Either \r\n or \n (we are being lenient) [4]
-        * ((?:.|[\r\nu2029u2028])*\4)  Header, Anything goes each line followed by the same line-ending as the request line [5]
+        * ((?:.|[\r\nu2029u2028])*\4)* Header, Anything goes each line followed by the same line-ending as the request line [5]
         *                              (we're expecting the client be consistent with their line ending)
         *                              (replace \4 with \r?\n to be more lenient)
         * \4                           Empty line which marks the end of the header
         * (.|[\r\nu2029u2028])*        Body. Anything goes. [6]
+        *
+        * P.S. Those weird looking patterns involving u<codepoint> exist to match *anything* since '.' doesn't match those particular
+        *      code points
         */
-        const std::regex request_pattern (R"(([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n)((?:.|[\r\nu2029u2028])*\4)\4(.|[\r\nu2029u2028])*)");
+        const std::regex request_pattern (R"(([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n)((?:.|[\r\nu2029u2028])*\4)*\4(.|[\r\nu2029u2028])*)");
 
         // TODO Read other header fields
         // TODO Don't assume GET as the method and handle other methods.
@@ -191,32 +207,25 @@ namespace ryuuk
         if (file.is_open() && file.good())
         {
             m_response =  "HTTP/1.0 200 OK\r\n";
-            m_response += "Connection: close\r\n" +
+            m_response += "Connection: close\r\n";
             m_response += "Content-Type: ";
 
             //auto ext = location.substr(location.find_last_of('.'));
             auto ext = location.substr(location.find_last_of('/'));
             auto pos = ext.find_last_of('.');
             if (pos != std::string::npos)
-                ext = ext.substr(pos + 2);
+                ext = ext.substr(pos + 1);
             else
                 ext = {};
 
-            // TODO Read MIME types from a config file
-//            if (ext == ".html")
-//                m_response += "text/html\r\n";
-//            else if (ext == ".css")
-//                m_response += "text/css\r\n";
-//            else if (ext == ".ico")
-//                m_response += "image/x-icon\r\n";
-//            else
-//                m_response += "application/octet-stream\r\n";
-
             auto it = mimeTypes.find(ext);
+            if (it == mimeTypes.end())
+                it = mimeTypes.find("bin");
+
             if (it != mimeTypes.end())
                 m_response += it->second + "\r\n";
             else
-                m_response += mimeTypes.find("bin")->second + "\r\n";
+                m_response += "application/octet-stream";  // Default
 
             std::string payload(std::istreambuf_iterator<char>(file), {});
             m_response += "Content-Length: " + std::to_string(payload.size());
@@ -237,7 +246,7 @@ namespace ryuuk
     void HTTP::sendNotFound()
     {
         // Possibly read this html template from config or some other file ?
-        const std::string html = "<html><head><title>Ryuuk</title></head><body><h1>It's a 404</h1><h2>Light got to this location before you, unfortunately.</h2></body>";
+        const std::string html = "<html><head><title>Ryuuk</title></head><body><h2>It's a 404</h2><hr><h3>The requested resource was not found. Light got to this location before you, unfortunately.</h3><br/><br/><br/><hr><i>Hosted using <a href=\"https://github.com/amhndu/ryuuk\">Ryuuk</a></i></body></html>";
         m_response = "HTTP/1.0 404 Not Found\r\n"
                      "Content-Type: text/html\r\n"
                      "Content-Length: " + std::to_string(html.size()) + "\r\n" +
@@ -255,36 +264,37 @@ namespace ryuuk
     bool HTTP::sendDirectoryListing(const std::string& path)
     {
         // Possibly read these from config or some other file ?
-        const std::string html_template = "<html>\n<head><title>Directory Listing for DIR</title></head>\n<body>\n<h2>Index of DIR</h2><hr/>\n<ul>\nLIST</ul>\n<hr><i>Hosted using <a href=\"https://github.com/amhndu/ryuuk\">Ryuuk</a></i></body>\n</html>";
-        const std::string entry_template = "<li><a href=\"URL\">NAME</a></li>\n";
+        const std::string html_template = "<html>\n<head><title>Directory Listing for $DIR</title></head>\n<body>\n<h2>Index of $DIR</h2><hr/>\n<ul>\n$LIST</ul>\n<hr><i>Hosted using <a href=\"https://github.com/amhndu/ryuuk\">Ryuuk</a></i></body>\n</html>";
+        const std::string entry_template = "<li><a href=\"$URL\">$URL</a></li>\n";
 
         m_response =  "HTTP/1.0 200 OK\r\n";
         m_response += "Connection: close\r\n" +
         m_response += "Content-Type: text/html\r\n";
 
-        // TODO Regex replace is overkill for this, possibly replace with something more efficient ?
-        std::string html = std::regex_replace(html_template, std::regex("DIR"), path);
-        std::string listing_buf;
+        std::string html = replaceAll(html_template, "$DIR", path);
+        std::vector<std::string> listing;
 
         DIR *dir;
         dirent *ep;
         dir = opendir(path.c_str());
         if (dir != nullptr)
         {
-            while (ep = readdir(dir))
+            while ((ep = readdir(dir)))
             {
                 std::string res = {ep->d_name};
                 if (getResourceType(path + res) == Directory)
                     res += '/';
 
-                listing_buf.append(std::regex_replace(
-                                        std::regex_replace(entry_template, std::regex("NAME"), res),
-                                        std::regex("URL"),
-                                        res));
+                listing.push_back(res);
             }
             closedir(dir);
 
-            html = std::regex_replace(html, std::regex("LIST"), listing_buf);
+            std::sort(listing.begin(), listing.end());
+            std::string listing_buf;
+            for (auto&& item : listing)
+                listing_buf.append(replaceAll(entry_template, "$URL", item));
+
+            html = replaceAll(html, "$LIST", listing_buf);
             m_response += "Content-Length: " + std::to_string(html.size());
             m_response += "\r\n\r\n";
             m_response += html;

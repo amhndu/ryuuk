@@ -5,6 +5,7 @@
 #include "SocketStream.hpp"
 #include "SocketListener.hpp"
 #include "SocketSelector.hpp"
+#include "HTTP.hpp"
 
 #include <list>
 #include <map>
@@ -45,7 +46,7 @@ namespace ryuuk
             std::string ip;
             unsigned    port;
             unsigned    backlog;
-            std::map<std::string, std::string> mime_types;
+            std::map<std::string, std::string>& mime_types = HTTP::mimeTypes;
         } server_manifest;
 
     private:

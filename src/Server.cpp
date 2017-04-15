@@ -28,8 +28,8 @@ namespace ryuuk
 
     Server::Server() : m_listener() ,
                        m_clients()  ,
-                       m_running(true),
-                       m_configFile{SERVER_CONFIG_FILE}
+                       m_configFile{SERVER_CONFIG_FILE},
+                       m_running(true)
     {
         LOG(INFO) << "Server object created." << std::endl;
     }
@@ -57,11 +57,10 @@ namespace ryuuk
 
     Server::~Server()
     {
-        //m_listener.~SocketListener(); : Undefined behaviour! ouch!
         LOG(INFO) << "Server object destroyed." << std::endl;
     }
 
-    std::string conv(const std::string s)
+    std::string conv(const std::string& s)
     {
         std::stringstream r;
         for (auto&& c : s)
@@ -139,7 +138,7 @@ namespace ryuuk
                 std::string field  = ltrim(rtrim(line.substr(0, divider)));
                 std::string value = ltrim(rtrim(line.substr(divider + 1)));
 
-                server_manifest.mime_types[field] = value;
+                HTTP::mimeTypes[field] = value;
 
                 LOG(DEBUG) << "Added MIME type: " + field + ": " + value << std::endl;
             }
@@ -151,7 +150,7 @@ namespace ryuuk
 
         LOG(INFO) << "Parsed and applied server configuration from \'" + m_configFile << "\'." << std::endl;
 
-        HTTP::mimeTypes = server_manifest.mime_types;
+        // HTTP::mimeTypes = server_manifest.mime_types;
     }
 
     void Server::run()
