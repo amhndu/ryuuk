@@ -5,8 +5,6 @@
  *
  * SocketStream - A high level abstraction of a TCP socket
  *
- * TODO: Everything
- *
  */
 
 #ifndef SOCKETSTREAM_HPP

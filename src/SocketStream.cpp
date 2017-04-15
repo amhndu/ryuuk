@@ -6,13 +6,13 @@ namespace ryuuk
 {
     SocketStream::SocketStream()
     {
-        LOG(DEBUG) << "Empty SocketStream object created." << std::endl;
+//         LOG(DEBUG) << "Empty SocketStream object created." << std::endl;
     }
 
     SocketStream::SocketStream(int sockfd, sockaddr_storage& sockinfo) : Socket(sockfd),
                                                                          m_clientAddr(sockinfo)
     {
-        LOG(DEBUG) << "SocketStream object created." << std::endl;
+//         LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
     SocketStream::SocketStream(SocketStream&& other) : Socket(other.m_socketfd),
@@ -26,18 +26,20 @@ namespace ryuuk
     {
         if (valid())
         {
-            LOG(DEBUG) << "Destroyed SocketStream object: " << m_socketfd << std::endl;
+//             LOG(DEBUG) << "Destroyed SocketStream object: " << m_socketfd << std::endl;
             close(m_socketfd);
         }
     }
 
     bool SocketStream::create()
     {
+        throw std::runtime_error("SocketStream::create() not implemented.");
         return false;
     }
 
     bool SocketStream::drop()
     {
+        throw std::runtime_error("SocketStream::drop() not implemented.");
         return false;
     }
 

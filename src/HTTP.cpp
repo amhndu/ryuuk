@@ -14,6 +14,7 @@ namespace ryuuk
     * Sanitize path (relative to current working directory)
     * Path above the current directory results in a domain_error being raised
     * Paths starting with or w/o a slash are treated the same
+    * Trailing slash is kept if present..
     */
     std::string sanitizePath(const std::string& path)
     {
@@ -25,25 +26,25 @@ namespace ryuuk
         while (std::getline(ss, item, '/'))
             dirs.push_back(item);
 
-        // Ignore . and normalize .. by "deleting" previous directories.
+        // Ignore . and normalize .. by "deleting" previous non-empty directory from the path.
         for (std::size_t i = 0; i < dirs.size(); ++i)
         {
             if (dirs[i] == ".")
-                dirs[i] = "";
+                dirs[i] = {};
             else if (dirs[i] == "..")
             {
-                dirs[i] = "";
+                dirs[i] = {};
 
                 auto saved = i;
                 do
                 {
-                    if (i == 0)
+                    if (i == 0)   // Underflow, ie. going above the current working directory
                         throw std::domain_error("Path outside current directory");
                     else
                         --i;
                 }
                 while (dirs[i].empty());
-                dirs[i] = "";
+                dirs[i] = {};
                 i = saved;
             }
         }
@@ -54,7 +55,7 @@ namespace ryuuk
                      [](const std::string& s){ return !s.empty(); });
 
         auto str = ss.str();
-        if (!str.empty())   // Remove the trailing slash
+        if (!str.empty() && path.back() != '/')   // Remove the last slash if the original path didn't had it
             str.erase(str.size() - 1);
         return str;
     }
@@ -96,29 +97,29 @@ namespace ryuuk
                         version     = matches[3],
                         line_end    = matches[4];
 
-            LOG(DEBUG) << "Parsing HTTP request line" << std::endl;
-            LOG(DEBUG) << "Method: " << method << std::endl;
-            LOG(DEBUG) << "Location: " << location << std::endl;
-            LOG(DEBUG) << "version: " << version << std::endl;
-            if (line_end == "\r\n")
-                LOG(DEBUG) << "CR-LF line ending" << std::endl;
-            else
-                LOG(DEBUG) << "LF line ended" << std::endl;
+            LOG(DEBUG) << "Request line parsed: " << method << " " << location << " HTTP/" << version << std::endl;
+
+//             if (line_end == "\r\n")
+//                 LOG(DEBUG) << "CR-LF line ending" << std::endl;
+//             else
+//                 LOG(DEBUG) << "LF line ended" << std::endl;
 
             try
             {
-                location = "./" + sanitizePath(location); // can throw std::domain_error
+                auto loc = sanitizePath(location); // can throw std::domain_error
+                location = "./" + (loc != "/" ? loc : "");
                 LOG(DEBUG) << "Sanitized location: " << location << std::endl;
                 FileType type = getResourceType(location);
                 LOG(DEBUG) << "Resource Type: " << type << std::endl;
 
                 if (type == Directory)
                 {
-                    // location.append("/index.html");
-                    LOG(DEBUG) << "Append index.html to path" << std::endl;
                     type = getResourceType(location + "/index.html");
                     if (type == Regular)
+                    {
                         location += "/index.html";
+                        LOG(DEBUG) << "Append index.html to path" << std::endl;
+                    }
                     else if (type == NonExistent)
                         type = Directory;
                     else
@@ -220,8 +221,8 @@ namespace ryuuk
     bool HTTP::sendDirectoryListing(const std::string& path)
     {
         // Possibly read these from config or some other file ?
-        const std::string html_template = "<html><head><title>Directory Listing for DIR</title></head><body><h1>DIR</h1><ul>LIST</ul></body>";
-        const std::string entry_template = "<li><a href=\"URL\">NAME</a></li>";
+        const std::string html_template = "<html>\n<head><title>Directory Listing for DIR</title></head>\n<body>\n<h1>Index of DIR</h1>\n<ul>\nLIST</ul>\n</body>\n</html>";
+        const std::string entry_template = "<li><a href=\"URL\">NAME</a></li>\n";
 
         m_response =  "HTTP/1.0 200 OK\r\n";
         m_response += "Connection: close\r\n" +
@@ -238,10 +239,14 @@ namespace ryuuk
         {
             while (ep = readdir(dir))
             {
+                std::string res = {ep->d_name};
+                if (getResourceType(path + res) == Directory)
+                    res += '/';
+
                 listing_buf.append(std::regex_replace(
-                                        std::regex_replace(entry_template, std::regex("NAME"), {ep->d_name}),
+                                        std::regex_replace(entry_template, std::regex("NAME"), res),
                                         std::regex("URL"),
-                                        path + "/" + ep->d_name));
+                                        res));
             }
             closedir(dir);
 

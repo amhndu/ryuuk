@@ -23,8 +23,6 @@ namespace ryuuk
 
         SocketSelector();
 
-        ~SocketSelector();
-
         void clear();
 
         void add(Socket& socket);

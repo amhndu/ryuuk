@@ -9,21 +9,11 @@ namespace ryuuk
     {
         FD_ZERO(&m_socketsFds);
         FD_ZERO(&m_readyFds);
-
-//        m_tv.tv_sec = 5; // ouch!, magic no.s
-//        m_tv.tv_usec = 0;
-
-        LOG(DEBUG) << "Created TCP socket selector" << std::endl;
-    }
-
-    SocketSelector::~SocketSelector()
-    {
-        LOG(DEBUG) << "Destroyed TCP socket selector" << std::endl;
     }
 
     void SocketSelector::clear()
     {
-        //
+        throw std::runtime_error("SocketSelector::clear() not implemented.");
     }
 
     void SocketSelector::add(Socket& socket)
@@ -92,6 +82,8 @@ namespace ryuuk
     bool SocketSelector::wait(unsigned timeout)
     {
         timeval tOut;
+
+        // TODO Read from config ?
         tOut.tv_sec = timeout / 1000000;
         tOut.tv_usec = timeout % 1000000;
 

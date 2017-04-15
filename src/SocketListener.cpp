@@ -44,7 +44,6 @@ namespace ryuuk
             LOG(ERROR) << "getaddrinfo() error: " << gai_strerror(status) << std::endl;
             return false;
         }
-        LOG(DEBUG) << "Fetched server address info" << std::endl;
 
         auto p = serverInfo;
         for (; p != nullptr; p = p->ai_next)
@@ -56,7 +55,6 @@ namespace ryuuk
                 LOG(ERROR) << "socket() error: Unable to create a socket, trying next result" << std::endl;
                 continue;
             }
-            LOG(DEBUG) << "Created a new socket (for listener)" << std::endl;
 
             int yes = 1;
             if (setsockopt(m_socketfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
@@ -65,7 +63,6 @@ namespace ryuuk
                 //return false;
                 continue;
             }
-            LOG(DEBUG) << "Successfully set socket options (for listener)" << std::endl;
 
             if (bind(m_socketfd, serverInfo->ai_addr, serverInfo->ai_addrlen) < 0)
             {
@@ -78,7 +75,6 @@ namespace ryuuk
         }
 
         freeaddrinfo(serverInfo);
-        LOG(DEBUG) << "Released server `addrinfo` struct back into wilderness" << std::endl;
 
         if (p == nullptr)
         {
@@ -101,7 +97,7 @@ namespace ryuuk
         sockaddr_storage client_info;
         socklen_t addr_size = sizeof(client_info);
 
-        memset((void *)&client_info, 0, sizeof client_info);
+        memset(&client_info, 0, sizeof client_info);
 
         int client_sockfd = ::accept(m_socketfd, reinterpret_cast<sockaddr*>(&client_info), &addr_size);
 
@@ -119,15 +115,13 @@ namespace ryuuk
         {
             ::close(m_socketfd);
             m_socketfd = -1;
-            LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
+            LOG(INFO) << "Closed listener socket" << std::endl;
         }
     }
 
     SocketListener::~SocketListener()
     {
         close();
-        //::close(m_socketfd);
-        //LOG(INFO) << "Destroyed listener object (SocketListener)" << std::endl;
     }
 
 
