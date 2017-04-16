@@ -22,9 +22,6 @@
 namespace
 {
     ryuuk::Server *serverPtr = nullptr;
-    std::string logfile = "ryuuk-log.txt";
-    std::string configfile = "";
-    ryuuk::Level loglevel = ryuuk::LOG_LEVEL;
 }
 
 void printHelp()
@@ -38,6 +35,15 @@ void printHelp()
     std::cout << " -log [PATH-TO-LOG-FILE] : Specifiy a log file" << std::endl;
 }
 
+struct Options
+{
+    bool exit               = false;
+    int exit_code           = EXIT_SUCCESS;
+    std::string logfile     = "ryuuk-log.txt";
+    std::string configfile  = "";
+    ryuuk::Level loglevel   = ryuuk::LOG_LEVEL;
+};
+
 //
 // Few rules:
 //  * -h takes the utmost precendence. No matter how many
@@ -46,74 +52,81 @@ void printHelp()
 //  * Any no. of supported options can be set as long as
 //    they obey the format as prescribed in printHelp()
 //
-void applyCommandLineOptions(int _argc, char** _argv)
+Options applyCommandLineOptions(int _argc, char** _argv)
 {
-    std::vector<std::string> options{};
+    std::vector<std::string> arguments {_argv, _argv + _argc};
+    Options options;
 
-    for (int i = 1; i < _argc; ++i)
-        options.push_back(_argv[i]);
-
-    for (int i = 0; i < options.size(); )
+    for (int i = 0; !options.exit && i < arguments.size(); )
     {
         // Get the i-th option, check if it needs a value.
         // If it does, then the subsequent option is the value.
         // If there exist no subsequent option, then current option
         // is ignored silently.
 
-        if (options[i] == "-h")
+        if (arguments[i] == "-h")
         {
             printHelp();
-            exit(EXIT_SUCCESS);
+            options.exit = true;
+            options.exit_code = EXIT_SUCCESS;
         }
 
-        if (options[i] == "-cfg")
+        if (arguments[i] == "-cfg")
         {
-            if (i == options.size() - 1)
+            if (i == arguments.size() - 1)
             {
                 std::cerr << "Invalid usage!\nryuuk -h for help and detailed usage." << std::endl;
-                exit(EXIT_FAILURE);
+                options.exit = true;
+                options.exit_code = EXIT_FAILURE;
+            }
+            else
+            {
+                options.configfile = arguments[i + 1];
+                i += 2;
+            }
+        }
+
+        else if (arguments[i] == "-lvl")
+        {
+            if (i == arguments.size() - 1)
+            {
+                std::cerr << "Invalid usage!\nryuuk -h for help and detailed usage." << std::endl;
+                options.exit = true;
+                options.exit_code = EXIT_FAILURE;
+                break;
             }
 
-            configfile = options[i + 1];
+            if (arguments[i + 1] == "ERROR")
+                options.loglevel = ryuuk::Level::ERROR;
+
+            else if (arguments[i + 1] == "INFO")
+                options.loglevel = ryuuk::Level::INFO;
+
+            else if (arguments[i + 1] == "DEBUG")
+                options.loglevel = ryuuk::Level::DEBUG;
+
             i += 2;
         }
 
-        else if (options[i] == "-lvl")
-        {
-            if (i == options.size() - 1)
-            {
-                std::cerr << "Invalid usage!\nryuuk -h for help and detailed usage." << std::endl;
-                exit(EXIT_FAILURE);
-            }
-
-            if (options[i + 1] == "ERROR")
-                loglevel = ryuuk::Level::ERROR;
-
-            else if (options[i + 1] == "INFO")
-                loglevel = ryuuk::Level::INFO;
-
-            else if (options[i + 1] == "DEBUG")
-                loglevel = ryuuk::Level::DEBUG;
-
-            i += 2;
-        }
-
-        else if (options[i] == "-log")
+        else if (arguments[i] == "-log")
         {
             //if (i + 1 == _argc)
-            if (i == options.size() - 1)
+            if (i == arguments.size() - 1)
             {
                 std::cerr << "Invalid usage!\nryuuk -h for help and detailed usage." << std::endl;
-                exit(EXIT_FAILURE);
+                options.exit = true;
+                options.exit_code = EXIT_FAILURE;
             }
 
-            logfile = options[i + 1];
+            options.logfile = arguments[i + 1];
             i += 2;
         }
 
         else
             i++;
     }
+
+    return options;
 }
 
 int main(int argc, char **argv)
@@ -121,9 +134,12 @@ int main(int argc, char **argv)
     try
     {
 
-    applyCommandLineOptions(argc, argv);
+    Options opts = applyCommandLineOptions(argc, argv);
 
-    std::ofstream logFile(logfile, std::ios::out | std::ios::ate);
+    if (opts.exit)
+        return opts.exit_code;
+
+    std::ofstream logFile(opts.logfile, std::ios::out | std::ios::ate);
     ryuuk::TeeStream tee(logFile, std::cout);
 
     if (logFile.is_open() && logFile.good())
@@ -131,7 +147,7 @@ int main(int argc, char **argv)
     else
         ryuuk::Log::get().setLogStream(std::cerr);
 
-    ryuuk::Log::get().setLevel(loglevel);
+    ryuuk::Log::get().setLevel(opts.loglevel);
 
     ryuuk::Log::get().getStream()
               << "---------------------------------------------------" << std::endl
@@ -147,8 +163,8 @@ int main(int argc, char **argv)
     // Set the global ptr for the handler
     serverPtr = &Ryuuk;
 
-    if (!configfile.empty())
-        serverPtr->setConfigFile(configfile);
+    if (!opts.configfile.empty())
+        serverPtr->setConfigFile(opts.configfile);
 
     serverPtr->init();
 

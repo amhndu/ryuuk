@@ -171,7 +171,10 @@ namespace ryuuk
                             sendInternalError();
                         break;
                     case Directory:
-                        if (!sendDirectoryListing(location))
+                        // If the path doesn't have a slash, redirect by adding it, this makes relative links work properly
+                        if (location.back() != '/')
+                            permanentRedirect(location.substr(1) + '/'); // Remove the preceding '.'
+                        else if (!sendDirectoryListing(location))
                             sendInternalError();
                         break;
                     case PermissionDenied:
@@ -268,7 +271,7 @@ namespace ryuuk
         const std::string entry_template = "<li><a href=\"$URL\">$URL</a></li>\n";
 
         m_response =  "HTTP/1.0 200 OK\r\n";
-        m_response += "Connection: close\r\n" +
+        m_response += "Connection: close\r\n";
         m_response += "Content-Type: text/html\r\n";
 
         std::string html = replaceAll(html_template, "$DIR", path);
@@ -306,5 +309,14 @@ namespace ryuuk
         }
         return true;
     }
+
+    void HTTP::permanentRedirect(const std::string& new_location)
+    {
+        LOG(INFO) << "Redirecting to " << new_location << std::endl;
+        m_response =  "HTTP/1.0 301 Moved Permanently\r\n";
+        m_response += "Location: " + new_location + "\r\n";
+        m_response += "\r\n";
+    }
+
 
 }

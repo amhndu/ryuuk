@@ -37,6 +37,8 @@ namespace ryuuk
 
         bool sendDirectoryListing(const std::string& path);
 
+        void permanentRedirect(const std::string& new_location);
+
         std::string m_response;
     };
 }
