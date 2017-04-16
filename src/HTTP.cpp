@@ -28,7 +28,9 @@ namespace ryuuk
     * Sanitize path (relative to current working directory)
     * Path above the current directory results in a domain_error being raised
     * Paths starting with or w/o a slash are treated the same
-    * Trailing slash is kept if present..
+    * Trailing slash is kept if present.
+    * Also does URL-decoding, %xx is converted to \uxx character (xx in hex)
+    * Paths that can not be sanitized result in domain_error being raised
     */
     std::string sanitizePath(const std::string& path)
     {
@@ -60,6 +62,33 @@ namespace ryuuk
                 while (dirs[i].empty());
                 dirs[i] = {};
                 i = saved;
+            }
+            else // URL decode
+            {
+                std::size_t j = 0;
+                auto x = dirs[i].find('d');
+                auto y = dirs[i].find('%');
+                while ((j = dirs[i].find('%', j)) != std::string::npos)
+                {
+                    if (j + 2 >= dirs[i].size())
+                    {
+                        LOG(INFO) << "Malformed URL" << std::endl;
+                        throw std::domain_error("URL decoding error");
+                    }
+
+                    const std::string hex_ciphers{"0123456789abcdef"};
+                    char c = 0;
+                    for (std::size_t k = j + 1; k <= j + 2; ++k)
+                    {
+                        auto p = hex_ciphers.find(dirs[i][k]);
+                        if (p != std::string::npos)
+                            c = c * 16 + p;
+                        else
+                            throw std::domain_error("URL decoding error");
+                    }
+
+                    dirs[i].replace(j, 3, &c, 1);
+                }
             }
         }
 
@@ -139,6 +168,7 @@ namespace ryuuk
 
             try
             {
+                auto orig_loc = location;
                 auto loc = sanitizePath(location); // can throw std::domain_error
                 location = "./" + (loc != "/" ? loc : "");
                 LOG(DEBUG) << "Sanitized location: " << location << std::endl;
@@ -172,8 +202,9 @@ namespace ryuuk
                         break;
                     case Directory:
                         // If the path doesn't have a slash, redirect by adding it, this makes relative links work properly
+                        // TODO FIXME instead of sending orig_loc, send urlEncode(location.substr(1))
                         if (location.back() != '/')
-                            permanentRedirect(location.substr(1) + '/'); // Remove the preceding '.'
+                            permanentRedirect(/*location.substr(1)*/ orig_loc + '/'); // Remove the preceding '.'
                         else if (!sendDirectoryListing(location))
                             sendInternalError();
                         break;
@@ -203,6 +234,7 @@ namespace ryuuk
         return m_response;
 
     }
+
 
     bool HTTP::sendResource(const std::string& location)
     {
