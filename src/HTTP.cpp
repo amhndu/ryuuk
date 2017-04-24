@@ -5,24 +5,14 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <algorithm>
-#include "HTTP.hpp"
+
 #include "Log.hpp"
+#include "Utility.hpp"
+#include "HTTP.hpp"
 
 namespace ryuuk
 {
     std::map<std::string, std::string> HTTP::mimeTypes = {};
-
-    std::string replaceAll(const std::string& str, const std::string& key, const std::string& replacement)
-    {
-        std::string result {str};
-        std::size_t i = 0;
-        while ((i = result.find(key, i)) != std::string::npos)
-        {
-            result.replace(i, key.size(), replacement);
-            i += replacement.size();
-        }
-        return result;
-    }
 
     /*
     * Sanitize path (relative to current working directory)
@@ -66,8 +56,8 @@ namespace ryuuk
             else // URL decode
             {
                 std::size_t j = 0;
-                auto x = dirs[i].find('d');
-                auto y = dirs[i].find('%');
+                //auto x = dirs[i].find('d');
+                //auto y = dirs[i].find('%');
                 while ((j = dirs[i].find('%', j)) != std::string::npos)
                 {
                     if (j + 2 >= dirs[i].size())
@@ -136,7 +126,7 @@ namespace ryuuk
         * HTTP/                        HTTP/
         * (\d\.\d)                     Match X.Y where X and Y are digits [3]
         * (\r?\n)                      Either \r\n or \n (we are being lenient) [4]
-        * ((?:.|[\r\nu2029u2028])*\4)* Header, Anything goes each line followed by the same line-ending as the request line [5]
+        * ((?:.|[\r\nu2029u2028])*\4)* Headers, Anything goes each line followed by the same line-ending as the request line [5]
         *                              (we're expecting the client be consistent with their line ending)
         *                              (replace \4 with \r?\n to be more lenient)
         * \4                           Empty line which marks the end of the header
@@ -159,7 +149,17 @@ namespace ryuuk
                         headers     = matches[5],
                         body        = matches[6];
 
+            //LOG(DEBUG) << "Raw request:\n" << request;
+
             LOG(DEBUG) << "Request line parsed: " << method << " " << location << " HTTP/" << version << std::endl;
+
+            //LOG(DEBUG) << "Headers:\n" << headers;
+
+            //LOG(DEBUG) << "body:\n" << body;
+
+            // Parse the headers.
+
+            m_headerFields.interpretHeaders(headers);
 
 //             if (line_end == "\r\n")
 //                 LOG(DEBUG) << "CR-LF line ending" << std::endl;
@@ -247,6 +247,7 @@ namespace ryuuk
 
             //auto ext = location.substr(location.find_last_of('.'));
             auto ext = location.substr(location.find_last_of('/'));
+
             auto pos = ext.find_last_of('.');
             if (pos != std::string::npos)
                 ext = ext.substr(pos + 1);

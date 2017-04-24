@@ -12,6 +12,7 @@ General
     - Path to config file
     - Logging level
 * POST and PUT methods
+* Proper content negotiation (near future)
 
 Concurrency
 -----------

@@ -1,0 +1,6 @@
+foo@mail.com
+abcd.@mail.com
+@mail.com
+as67-=*mail.com
+first-last@domain.au
+first-last009@domain.co.uk

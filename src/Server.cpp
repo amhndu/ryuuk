@@ -1,4 +1,6 @@
+#include "Utility.hpp"
 #include "Server.hpp"
+#include "HTTPHeader.hpp"
 #include "HTTP.hpp"
 
 #include <fstream>
@@ -8,24 +10,6 @@
 
 namespace ryuuk
 {
-    // trim from start (construct new string)
-    inline std::string ltrim(const std::string &str)
-    {
-        std::string s(str);
-        s.erase(s.begin(), std::find_if_not<decltype(s.begin()), int(int)>(s.begin(), s.end(),
-                std::isspace));
-        return s;
-    }
-
-    // trim from end (construct new string)
-    inline std::string rtrim(const std::string &str)
-    {
-        std::string s(str);
-        s.erase(std::find_if_not<decltype(s.rbegin()), int(int)>(s.rbegin(), s.rend(),
-                std::isspace).base(), s.end());
-        return s;
-    }
-
     Server::Server() : m_listener() ,
                        m_clients()  ,
                        m_configFile{SERVER_CONFIG_FILE},
@@ -38,6 +22,9 @@ namespace ryuuk
     {
         LOG(INFO) << "Parsing server configuration file..." << std::endl;
         parseConfigFile();
+
+        LOG(INFO) << "Adding supported headers..." << std::endl;
+        HTTPHeader::initAllowedHeaders();
 
         LOG(INFO) << "Attempting to bind listener (SocketListener object)..." << std::endl;
         if (m_listener.listen(server_manifest.port, server_manifest.backlog))
@@ -58,19 +45,6 @@ namespace ryuuk
     Server::~Server()
     {
         LOG(INFO) << "Server object destroyed." << std::endl;
-    }
-
-    std::string conv(const std::string& s)
-    {
-        std::stringstream r;
-        for (auto&& c : s)
-        {
-            if (isprint(c))
-                r << c;
-            else
-                r << "\\" << std::oct << std::setw(3) << std::setfill('0') << +c;
-        }
-        return r.str();
     }
 
     void Server::parseConfigFile()
@@ -200,6 +174,8 @@ namespace ryuuk
                 std::string res(http.buildResponse({buffer, buffer + recieved}));
 //                 LOG(DEBUG) << "Sending response to client " << sock_i->getSocketFd() << ". Dump:\n" <<
 //                                 conv(res) << std::endl;
+
+                //LOG(DEBUG) << "Raw response:\n" << res << std::endl;
 
                 if (sock_i->send(res.c_str(), res.size()) != res.size())
                 {

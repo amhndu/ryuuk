@@ -4,6 +4,8 @@
 #include <string>
 #include <map>
 
+#include "HTTPHeader.hpp"
+
 namespace ryuuk
 {
     class HTTP
@@ -38,6 +40,8 @@ namespace ryuuk
         bool sendDirectoryListing(const std::string& path);
 
         void permanentRedirect(const std::string& new_location);
+
+        HTTPHeader m_headerFields;
 
         std::string m_response;
     };
