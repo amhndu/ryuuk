@@ -164,6 +164,7 @@ namespace ryuuk
                 {
                     LOG(ERROR) << "Receive error with socket " << sock_i->getSocketFd() << " and errno " << errno << std::endl;
                     sock_i = m_clients.erase(sock_i);
+                    m_selector.remove(*sock_i);
                     continue;
                 }
                 else
@@ -184,6 +185,7 @@ namespace ryuuk
                     LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
                     // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
                     sock_i = m_clients.erase(sock_i);
+                    m_selector.remove(*sock_i);
                     continue;
                 }
 
