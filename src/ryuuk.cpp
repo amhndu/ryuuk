@@ -131,9 +131,6 @@ Options applyCommandLineOptions(int _argc, char** _argv)
 
 int main(int argc, char **argv)
 {
-    try
-    {
-
     Options opts = applyCommandLineOptions(argc, argv);
 
     if (opts.exit)
@@ -186,14 +183,6 @@ int main(int argc, char **argv)
     sigaction(SIGPIPE, &sa_pipe, nullptr);
 
     Ryuuk.run();
-
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << "\nException occurred:" << std::endl;
-        std::cerr << e.what() << std::endl;
-    }
-
 
     return EXIT_SUCCESS;
 }

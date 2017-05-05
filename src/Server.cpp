@@ -163,6 +163,8 @@ namespace ryuuk
                 else if (recieved < 0)
                 {
                     LOG(ERROR) << "Receive error with socket " << sock_i->getSocketFd() << " and errno " << errno << std::endl;
+                    sock_i = m_clients.erase(sock_i);
+                    continue;
                 }
                 else
                 {
