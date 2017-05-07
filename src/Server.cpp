@@ -7,12 +7,11 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include <functional>
 
 namespace ryuuk
 {
-    Server::Server() : m_listener() ,
-                       m_clients()  ,
-                       m_configFile{SERVER_CONFIG_FILE},
+    Server::Server() : m_configFile{SERVER_CONFIG_FILE},
                        m_running(true)
     {
         LOG(INFO) << "Server object created." << std::endl;
@@ -37,7 +36,6 @@ namespace ryuuk
         }
 
         m_running = true;
-        m_selector.add(m_listener);
 
         LOG(INFO) << "Listening for incoming connections..." << std::endl;
     }
@@ -123,8 +121,6 @@ namespace ryuuk
         }
 
         LOG(INFO) << "Parsed and applied server configuration from \'" + m_configFile << "\'." << std::endl;
-
-        // HTTP::mimeTypes = server_manifest.mime_types;
     }
 
     void Server::run()
@@ -132,83 +128,92 @@ namespace ryuuk
         LOG(INFO) << "Server running." << std::endl;
         while(m_running)
         {
-            // Wait until some socket is active
-            if (m_selector.wait())
-            {
-                // Try doing either
-                addClient();
-                receive();
-            }
-        }
-        LOG(INFO) << "Server closed." << std::endl;
-    }
-
-    void Server::receive()
-    {
-        for (auto sock_i = m_clients.begin(); sock_i != m_clients.end(); )
-        {
-            if (m_selector.isReady(*sock_i))
-            {
-                int recieved = -1;
-                const char* buffer = nullptr;
-                std::tie(recieved, buffer) = sock_i->receive();
-
-                if (recieved == 0)
-                {
-                    LOG(DEBUG) << "Removing socket " << sock_i->getSocketFd() << std::endl;
-                    m_selector.remove(*sock_i);
-                    sock_i = m_clients.erase(sock_i);
-                    continue;
-                }
-                else if (recieved < 0)
-                {
-                    LOG(ERROR) << "Receive error with socket " << sock_i->getSocketFd() << " and errno " << errno << std::endl;
-                    sock_i = m_clients.erase(sock_i);
-                    continue;
-                }
-                else
-                {
-                    LOG(DEBUG) << "Received request from " << sock_i->getSocketFd() << /*". Dump:\n" <<
-                                conv({buffer, buffer+recieved}) <<*/ std::endl;
-                }
-
-                HTTP http;
-                std::string res(http.buildResponse({buffer, buffer + recieved}));
-//                 LOG(DEBUG) << "Sending response to client " << sock_i->getSocketFd() << ". Dump:\n" <<
-//                                 conv(res) << std::endl;
-
-                //LOG(DEBUG) << "Raw response:\n" << res << std::endl;
-
-                if (sock_i->send(res.c_str(), res.size()) != res.size())
-                {
-                    LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
-                    // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
-                    sock_i = m_clients.erase(sock_i);
-                    continue;
-                }
-
-            }
-
-            ++sock_i;
-        }
-    }
-
-    void Server::addClient()
-    {
-        if (m_selector.isReady(m_listener))
-        {
-            LOG(DEBUG) << "Accepting new connection" << std::endl;
-            auto &&socket = m_listener.accept();
+            auto &&socket = m_listener.accept();    // Blocks until a new connection
             if (socket.valid())
             {
-                m_clients.push_back(std::move(socket));
-                m_selector.add(m_clients.back());
+                LOG(DEBUG) << "Accepting new connection" << std::endl;
+
+                std::lock_guard<std::mutex> guard(m_queueMutex);
+                if (!m_cleanupQueue.empty())
+                {
+                    LOG(DEBUG) << "Doing worker thread cleanup" << std::endl;
+                }
+                for (int fd : m_cleanupQueue)
+                {
+                    auto i = m_connections.find(fd);
+                    if (i == m_connections.end())
+                        throw std::runtime_error("fd " + std::to_string(fd) + " from m_cleanupQueue not found in map");
+                    LOG(DEBUG) << "Removing worker/socket " << fd << std::endl;
+                    i->second.join();
+                    m_connections.erase(i);
+                }
+                m_cleanupQueue.clear();
+
+                // Insertion must be after clean-up, otherwise, we'll delete a thread before it's socket was closed
+                int fd = socket.getSocketFd();  // Copy the fd before we move the socket object (and thus invalidate it)
+                m_connections.emplace(fd, std::thread(&Server::worker, this, std::move(socket)));
             }
             else
             {
-                LOG(ERROR) << "accept() error: Unable to establish connection with remote socket" << std::endl;
+                LOG(ERROR) << "accept() error: Unable to establish connection with remote socket. errno: " << errno << std::endl;
             }
         }
+
+        LOG(DEBUG) << "Shutting down sockets for remaining worker threads and waiting for them to finish" << std::endl;
+        for (auto i = m_connections.begin(); i != m_connections.end(); ++i)
+        {
+            // Shut down the socket, this will cause the recv in the thread to fail and thus exit
+            // This is *probably* not a very good design..
+            ::shutdown(i->first, SHUT_RDWR);
+            // Wait for it to finish
+            i->second.join();
+        }
+
+        LOG(INFO) << "Server closed." << std::endl;
+    }
+
+    void Server::worker(SocketStream &&sock)
+    {
+        int received = -1;
+        SocketStream socket(std::move(sock));
+        LOG(DEBUG) << "Worker starting up with socket " << socket.getSocketFd() << std::endl;
+        do
+        {
+            const char* buffer = nullptr;
+            // This needs fixin', see the todo.md
+            std::tie(received, buffer) = socket.receive();
+
+            if (received == 0)
+            {
+                LOG(DEBUG) << "Removing socket " << socket.getSocketFd() << std::endl;
+            }
+            else if (received < 0)
+            {
+                LOG(ERROR) << "Receive error with socket " << socket.getSocketFd() << " and errno " << errno << std::endl;
+            }
+            else
+            {
+                LOG(DEBUG) << "Received request from " << socket.getSocketFd() << /*". Dump:\n" <<
+                conv({buffer, buffer+recieved}) <<*/ std::endl;
+                HTTP http;
+                std::string res(http.buildResponse({buffer, buffer + received}));
+//                LOG(DEBUG) << "Sending response to client " << socket.getSocketFd() << ". Dump:\n" <<
+//                                 conv(res) << std::endl;
+
+                if (socket.send(res.c_str(), res.size()) != res.size())
+                {
+                    LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
+                    // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
+                    return;
+                }
+            }
+        }
+        while (received > 0);
+
+        std::lock_guard<std::mutex> guard(m_queueMutex);
+        m_cleanupQueue.push_back(socket.getSocketFd());
+        LOG(DEBUG) << "Adding socket " << socket.getSocketFd() << " to cleanup queue. "
+                   << "Worker thread closing" << std::endl;
     }
 
     void Server::shutdown()

@@ -170,14 +170,14 @@ int main(int argc, char **argv)
 
     // Shutdown server when SIGINT or SIGTERM is received
     sa.sa_handler =
-    [](int sig){ LOG(ryuuk::INFO) << "Received signal SIGTERM." << std::endl; if(serverPtr) serverPtr->shutdown(); };
+    [](int sig){ LOG(ryuuk::INFO) << "Received signal SIGTERM/SIGINT." << std::endl; if(serverPtr) serverPtr->shutdown(); };
 
     sa.sa_flags = 0;
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
     // LOG and carry on if SIGPIPE is received
-    // That is, some socket was abrutpty closed that we didn't notice and kept trying to writing to.
+    // That is, some socket was abrutpty closed that we didn't notice and kept trying writing to.
     struct sigaction sa_pipe;
     sa_pipe.sa_handler = [](int sig) { LOG(ryuuk::ERROR) << "Received SIGPIPE" << std::endl; };
     sigaction(SIGPIPE, &sa_pipe, nullptr);

@@ -4,12 +4,12 @@
 #include "Log.hpp"
 #include "SocketStream.hpp"
 #include "SocketListener.hpp"
-#include "SocketSelector.hpp"
 #include "HTTP.hpp"
 
-#include <list>
 #include <map>
+#include <list>
 #include <memory>
+#include <thread>
 
 namespace ryuuk
 {
@@ -28,16 +28,13 @@ namespace ryuuk
 
         void run();
 
-        void receive();
-
-        void addClient();
+        void worker(SocketStream&& sock);
 
         void shutdown();
 
         void setConfigFile(const std::string& file);
 
     public:
-
         const std::string SERVER_CONFIG_FILE = "ryuuk.conf";
         std::string m_configFile;
 
@@ -50,10 +47,10 @@ namespace ryuuk
         } server_manifest;
 
     private:
-
         SocketListener m_listener;
-        std::list<SocketStream> m_clients;
-        SocketSelector m_selector;
+        std::mutex m_queueMutex;
+        std::list<int> m_cleanupQueue;
+        std::map<int, std::thread> m_connections;
         bool m_running;
     };
 

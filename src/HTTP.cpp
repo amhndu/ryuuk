@@ -159,7 +159,7 @@ namespace ryuuk
 
             // Parse the headers.
 
-            m_headerFields.interpretHeaders(headers);
+//             m_headerFields.interpretHeaders(headers);
 
 //             if (line_end == "\r\n")
 //                 LOG(DEBUG) << "CR-LF line ending" << std::endl;

@@ -493,7 +493,8 @@ namespace ryuuk
             search = matches.suffix().str();
         }
 
-        LOG(DEBUG) << "Interpreted all supplied headers" << std::endl;
+//         LOG(DEBUG) << "Interpreted all supplied headers" << std::endl;
+        LOG(DEBUG) << "All headers ignored" << std::endl;
     }
 
     void HTTPHeader::applyResponseHeaders()
