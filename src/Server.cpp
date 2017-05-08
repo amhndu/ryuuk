@@ -128,7 +128,7 @@ namespace ryuuk
         LOG(INFO) << "Server running." << std::endl;
         while(m_running)
         {
-            auto &&socket = m_listener.accept();    // Blocks until a new connection
+            SocketStream socket = m_listener.accept();    // Blocks until a new connection
             if (socket.valid())
             {
                 LOG(DEBUG) << "Accepting new connection" << std::endl;

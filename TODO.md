@@ -5,20 +5,16 @@ These are Ryuuk\'s short term and long term goals.
 General
 -------
 
-* Put together a simple HTTP server for supporting simple GET requests (WIP)
-* Read and handle headers properly
-* After a request, properly shutdown the connection before close()ing (ie. removing the object)
-* Command line arguments
-    - Path to config file
-    - Logging level
-* POST and PUT methods
-* Proper content negotiation (near future)
+* Implement some basic headers. (Things like Connection: etc).
+    - Close connections if Connection: close
+    - Proper content negotiation (near future)
+* Reply back with HTTP/1.1 instead of currently saying 1.0
+* Reply back with 'Server: <blah>', currently isn't not even sent
 
 Concurrency
 -----------
 
-TBD
-
+*  Move to Worker Pool model, with each worker handling multiple sockets (using SocketSelector)
 
 Unit testing
 ------------

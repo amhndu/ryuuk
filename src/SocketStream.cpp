@@ -15,8 +15,8 @@ namespace ryuuk
 //         LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
-    SocketStream::SocketStream(SocketStream&& other) : Socket(other.m_socketfd),
-                                                       m_clientAddr(other.m_clientAddr)
+    SocketStream::SocketStream(SocketStream&& other) noexcept   : Socket(other.m_socketfd),
+                                                                  m_clientAddr(other.m_clientAddr)
     {
         other.m_socketfd = INVALID_SOCKET_FD;
     }
