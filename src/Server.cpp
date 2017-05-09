@@ -36,8 +36,6 @@ namespace ryuuk
         }
 
         m_running = true;
-
-        LOG(INFO) << "Listening for incoming connections..." << std::endl;
     }
 
     Server::~Server()
@@ -177,8 +175,8 @@ namespace ryuuk
         int received = -1;
         SocketStream socket(std::move(sock));
         LOG(DEBUG) << "Worker starting up with socket " << socket.getSocketFd() << std::endl;
-        do
-        {
+//         do
+//         {
             const char* buffer = nullptr;
             // This needs fixin', see the todo.md
             std::tie(received, buffer) = socket.receive();
@@ -207,8 +205,8 @@ namespace ryuuk
                     return;
                 }
             }
-        }
-        while (received > 0);
+//         }
+//         while (received > 0);
 
         std::lock_guard<std::mutex> guard(m_queueMutex);
         m_cleanupQueue.push_back(socket.getSocketFd());

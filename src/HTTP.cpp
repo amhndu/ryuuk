@@ -13,6 +13,7 @@
 namespace ryuuk
 {
     std::map<std::string, std::string> HTTP::mimeTypes = {};
+    const std::string HTTP::serverName = "Ryuuk 0.1";
 
     /*
     * Sanitize path (relative to current working directory)
@@ -149,15 +150,7 @@ namespace ryuuk
                         headers     = matches[5],
                         body        = matches[6];
 
-            //LOG(DEBUG) << "Raw request:\n" << request;
-
             LOG(DEBUG) << "Request line parsed: " << method << " " << location << " HTTP/" << version << std::endl;
-
-            //LOG(DEBUG) << "Headers:\n" << headers;
-
-            //LOG(DEBUG) << "body:\n" << body;
-
-            // Parse the headers.
 
 //             m_headerFields.interpretHeaders(headers);
 
@@ -166,6 +159,12 @@ namespace ryuuk
 //             else
 //                 LOG(DEBUG) << "LF line ended" << std::endl;
 
+            if (method != "GET")
+            {
+                methodNotImplemented();
+                return m_response;
+            }
+
             try
             {
                 auto orig_loc = location;
@@ -173,11 +172,9 @@ namespace ryuuk
                 location = "./" + (loc != "/" ? loc : "");
                 LOG(DEBUG) << "Sanitized location: " << location << std::endl;
                 FileType type = getResourceType(location);
-                LOG(DEBUG) << "Resource Type: " << type << std::endl;
 
-                // Here cases like "http://example.com/about" are handled.
-                // the URL "http://example.com/about" is resolved to
-                // "http://example.com/about/index.html"
+                // The URL "./about" is resolved to "./about/index.html" if the index exists
+                // Otherwise, a directory listing is sent instead.
                 if (type == Directory)
                 {
                     // Check If an index.html file is present in the path,
@@ -227,7 +224,8 @@ namespace ryuuk
         }
         else
         {
-            m_response = "HTTP/1.0 400 Bad Request\r\n\r\n";
+            m_response = "HTTP/1.0 400 Bad Request\r\n"
+                         "Server: " + serverName + "\r\n\r\n";
             LOG(INFO) << "Malformed request received" << std::endl;
         }
 
@@ -235,6 +233,12 @@ namespace ryuuk
 
     }
 
+    void HTTP::methodNotImplemented()
+    {
+        m_response = "HTTP/1.0 405 Method Not Allowed\r\n"
+                     "Server: " + serverName + "\r\n\r\n";
+        LOG(INFO) << "Sent method not allowed" << std::endl;
+    }
 
     bool HTTP::sendResource(const std::string& location)
     {
@@ -242,7 +246,8 @@ namespace ryuuk
         if (file.is_open() && file.good())
         {
             m_response =  "HTTP/1.0 200 OK\r\n";
-            m_response += "Connection: close\r\n";
+            m_response += "Connection: close\r\n";  // FIXME don't forget to remove this later
+            m_response += "Server: " + serverName + "\r\n";
             m_response += "Content-Type: ";
 
             //auto ext = location.substr(location.find_last_of('.'));
@@ -268,6 +273,7 @@ namespace ryuuk
             m_response += "\r\n\r\n";
             m_response += payload;
 
+            LOG(INFO) << "Sent resource succesfully" << std::endl;
             return true;
         }
         return false;
@@ -275,7 +281,8 @@ namespace ryuuk
 
     void HTTP::sendInternalError()
     {
-        m_response = "HTTP/1.0 500 Internal Server Error\r\n\r\n";
+        m_response = "HTTP/1.0 500 Internal Server Error\r\n"
+                     "Server: " + serverName + "\r\n\r\n";
         LOG(INFO) << "Internal server occurred" << std::endl;
     }
 
@@ -284,16 +291,18 @@ namespace ryuuk
         // Possibly read this html template from config or some other file ?
         const std::string html = "<html><head><title>Ryuuk</title></head><body><h2>It's a 404</h2><hr><h3>The requested resource was not found. Light got to this location before you, unfortunately.</h3><br/><br/><br/><hr><i>Hosted using <a href=\"https://github.com/amhndu/ryuuk\">Ryuuk</a></i></body></html>";
         m_response = "HTTP/1.0 404 Not Found\r\n"
+                     "Server: " + serverName + "\r\n"
                      "Content-Type: text/html\r\n"
                      "Content-Length: " + std::to_string(html.size()) + "\r\n" +
                      "\r\n" +
                      html;
-        LOG(INFO) << "Resource not found" << std::endl;
+        LOG(INFO) << "Sent  not found" << std::endl;
     }
 
     void HTTP::sendPermissionDenied()
     {
-        m_response = "HTTP/1.0 403 Forbidden\r\n\r\n";
+        m_response = "HTTP/1.0 403 Forbidden\r\n"
+                     "Server: " + serverName + "\r\n\r\n";
         LOG(INFO) << "Sent forbidden response" << std::endl;
     }
 
@@ -304,7 +313,8 @@ namespace ryuuk
         const std::string entry_template = "<li><a href=\"$URL\">$URL</a></li>\n";
 
         m_response =  "HTTP/1.0 200 OK\r\n";
-        m_response += "Connection: close\r\n";
+        m_response += "Connection: close\r\n";  // FIXME Don't forget to rmove this
+        m_response += "Server: " + serverName + "\r\n";
         m_response += "Content-Type: text/html\r\n";
 
         std::string html = replaceAll(html_template, "$DIR", path);
@@ -347,6 +357,7 @@ namespace ryuuk
     {
         LOG(INFO) << "Redirecting to " << new_location << std::endl;
         m_response =  "HTTP/1.0 301 Moved Permanently\r\n";
+        m_response += "Server: " + serverName + "\r\n";
         m_response += "Location: " + new_location + "\r\n";
         m_response += "\r\n";
     }

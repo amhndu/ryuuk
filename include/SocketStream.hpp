@@ -61,18 +61,9 @@ namespace ryuuk
         ~SocketStream();
 
         /**
-        * Create a TCP socket
-        *
-        * @return true if a socket was successfully created
-        */
-        bool create();
-
-        /**
-        * Destroy a TCP socket
-        *
-        * @return true if a socket was successfully let go
-        */
-        bool drop();
+         * Shutdown the socket, with default flags
+         */
+        void shutdown();
 
         /**
         * High level function to send data to
@@ -87,16 +78,12 @@ namespace ryuuk
         * thread until all the data has been sent.
         */
         int send(const char* data, std::size_t len);
-        //int send(SocketStream& remote);
 
         /**
         * High level method to receive data from a
         * remote TCP socket.
         *
-        * @param remote - A reference to the remote
-        *                 TCP socket object
-        *
-        * @return the no. of bytes received
+        * @return (number of bytes sent, pointer to the data)
         *
         * Note: This method blocks the current thread
         * until all the data has been received.

@@ -6,13 +6,11 @@ namespace ryuuk
 {
     SocketStream::SocketStream()
     {
-//         LOG(DEBUG) << "Empty SocketStream object created." << std::endl;
     }
 
     SocketStream::SocketStream(int sockfd, sockaddr_storage& sockinfo) : Socket(sockfd),
                                                                          m_clientAddr(sockinfo)
     {
-//         LOG(DEBUG) << "SocketStream object created." << std::endl;
     }
 
     SocketStream::SocketStream(SocketStream&& other) noexcept   : Socket(other.m_socketfd),
@@ -26,21 +24,14 @@ namespace ryuuk
     {
         if (valid())
         {
-//             LOG(DEBUG) << "Destroyed SocketStream object: " << m_socketfd << std::endl;
+            shutdown();
             close(m_socketfd);
         }
     }
 
-    bool SocketStream::create()
+    void SocketStream::shutdown()
     {
-        throw std::runtime_error("SocketStream::create() not implemented.");
-        return false;
-    }
-
-    bool SocketStream::drop()
-    {
-        throw std::runtime_error("SocketStream::drop() not implemented.");
-        return false;
+        ::shutdown(m_socketfd, SHUT_RDWR);
     }
 
     int SocketStream::send(const char* data, size_t len)
@@ -58,7 +49,7 @@ namespace ryuuk
             totalSent += sent;
         }
 
-        LOG(DEBUG) << "Sent data to remote client" << std::endl;
+//         LOG(DEBUG) << "Sent data to remote client" << std::endl;
 
         return totalSent;
     }
@@ -72,10 +63,10 @@ namespace ryuuk
         {
             LOG(ERROR) << "recv() : Error in receving data from remote client. errno: " << errno << std::endl;
         }
-        else if (recvd > 0)
-            LOG(DEBUG) << "Recevied data from remote client" << std::endl;
-        else
-            LOG(DEBUG) << "Socket " << m_socketfd << " disconnected." << std::endl;
+//         else if (recvd > 0)
+//             LOG(DEBUG) << "Recevied data from remote client" << std::endl;
+//         else
+//             LOG(DEBUG) << "Socket " << m_socketfd << " disconnected." << std::endl;
 
         return std::make_pair(recvd, m_rwbuffer);
     }

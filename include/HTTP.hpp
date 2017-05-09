@@ -27,6 +27,8 @@ namespace ryuuk
             Other,      // Devices, pipes, sockets etc
         };
 
+        const static std::string serverName;
+
         FileType getResourceType(const std::string& location);
 
         bool sendResource(const std::string& location);
@@ -40,6 +42,8 @@ namespace ryuuk
         bool sendDirectoryListing(const std::string& path);
 
         void permanentRedirect(const std::string& new_location);
+
+        void methodNotImplemented();
 
         HTTPHeader m_headerFields;
 
