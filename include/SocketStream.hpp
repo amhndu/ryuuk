@@ -45,7 +45,7 @@ namespace ryuuk
         /*
          * Move constructor
          */
-        SocketStream(SocketStream&& other);
+        SocketStream(SocketStream&& other) noexcept;
 
         /**
         * Create a TCP socket object with a valid

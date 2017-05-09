@@ -9,14 +9,13 @@
 */
 
 
-#include "SocketListener.hpp"
-
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 
 #include "Log.hpp"
+#include "SocketListener.hpp"
 
 
 namespace ryuuk
