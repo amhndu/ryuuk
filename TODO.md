@@ -6,12 +6,13 @@ General
 -------
 
 * Implement some basic headers.
-    - Close connections if Connection: close
-    - Date
+    - Connection: keep-alive
+    - Range (and return Accept-Ranges: bytes instead of the current : none) and If-Range and thus add 206 Partial Content
     - Check Accept parameters and if not satisfiable (ie. anything out the trivial stuff), reply with 406 Not Acceptable
-* Implement HEAD method.
-* Reply back with HTTP/1.1 instead of currently saying 1.0
+    - If-Match then send 412 Precondition fail, If-None-Match then send it again
 * If Connection is keep-alive or just in general, have timeouts and reply with 408 Request Timeout
+* sendResource: What if the resource is big.
+* Test persistant sessions.
 
 Concurrency
 -----------

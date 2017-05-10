@@ -26,6 +26,27 @@ namespace ryuuk
         return s;
     }
 
+    enum FileType
+    {
+        Regular,
+        Directory,
+        PermissionDenied,
+        NonExistent,
+        Other,      // Devices, pipes, sockets etc
+    };
+
+    FileType getResourceType(const std::string& location);
+
+    /*
+    * Sanitize path (relative to current working directory)
+    * Path above the current directory results in a domain_error being raised
+    * Paths starting with or w/o a slash are treated the same
+    * Trailing slash is kept if present.
+    * Also does URL-decoding, %xx is converted to \uxx character (xx in hex)
+    * Paths that can not be sanitized result in domain_error being raised
+    */
+    std::string sanitizePath(const std::string& path);
+
     std::string conv(const std::string& s);
 
     std::string replaceAll(const std::string& str, const std::string& key, const std::string& replacement);

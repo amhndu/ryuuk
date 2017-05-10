@@ -4,48 +4,23 @@
 #include <string>
 #include <map>
 
-#include "HTTPHeader.hpp"
-
 namespace ryuuk
 {
     class HTTP
     {
     public:
-
-        static std::map<std::string, std::string> mimeTypes;
-
-        std::string buildResponse(const std::string& request);
-
-    private:
-
-        enum FileType
+        // This struct is used to pass flagssettings/etc/ to the Server class.
+        // I couldn't really think of a better name for the struct :p
+        // Hint for future: Use this for sending chunks of data for big files
+        // Also possibly signal if the received data is incomplete and need to recv again ro smthin'
+        struct Manifest
         {
-            Regular,
-            Directory,
-            PermissionDenied,
-            NonExistent,
-            Other,      // Devices, pipes, sockets etc
+            bool keepAlive;     // Whether connection should be kept
+            // Add other things here when applicable
         };
 
-        const static std::string serverName;
-
-        FileType getResourceType(const std::string& location);
-
-        bool sendResource(const std::string& location);
-
-        void sendInternalError();
-
-        void sendNotFound();
-
-        void sendPermissionDenied();
-
-        bool sendDirectoryListing(const std::string& path);
-
-        void permanentRedirect(const std::string& new_location);
-
-        void methodNotImplemented();
-
-        HTTPHeader m_headerFields;
+        std::string buildResponse(const std::string& request, Manifest& manifest);
+    private:
 
         std::string m_response;
     };

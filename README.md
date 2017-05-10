@@ -45,6 +45,6 @@ For a more detailed keikaku, please see the [TODO](TODO.md)
 
 ## References
 
-* https://tools.ietf.org/html/rfc723<0-7>
-* https://tools.ietf.org/html/rfc2616
-* http://www2005.org/cdrom/docs/p730.pdf
+* https://tools.ietf.org/html/rfc723<0-7>  
+* https://tools.ietf.org/html/rfc2616  
+* http://www2005.org/cdrom/docs/p730.pdf  

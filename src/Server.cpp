@@ -1,6 +1,5 @@
 #include "Utility.hpp"
 #include "Server.hpp"
-#include "HTTPHeader.hpp"
 #include "HTTP.hpp"
 
 #include <fstream>
@@ -23,7 +22,6 @@ namespace ryuuk
         parseConfigFile();
 
         LOG(INFO) << "Adding supported headers..." << std::endl;
-        HTTPHeader::initAllowedHeaders();
 
         LOG(INFO) << "Attempting to bind listener (SocketListener object)..." << std::endl;
         if (m_listener.listen(server_manifest.port, server_manifest.backlog))
@@ -108,7 +106,7 @@ namespace ryuuk
                 std::string field  = ltrim(rtrim(line.substr(0, divider)));
                 std::string value = ltrim(rtrim(line.substr(divider + 1)));
 
-                HTTP::mimeTypes[field] = value;
+                Response::mimeTypes[field] = value;
 
                 LOG(DEBUG) << "Added MIME type: " + field + ": " + value << std::endl;
             }
@@ -174,9 +172,10 @@ namespace ryuuk
     {
         int received = -1;
         SocketStream socket(std::move(sock));
+        HTTP::Manifest manifest;
         LOG(DEBUG) << "Worker starting up with socket " << socket.getSocketFd() << std::endl;
-//         do
-//         {
+        do
+        {
             const char* buffer = nullptr;
             // This needs fixin', see the todo.md
             std::tie(received, buffer) = socket.receive();
@@ -194,7 +193,7 @@ namespace ryuuk
                 LOG(DEBUG) << "Received request from " << socket.getSocketFd() << /*". Dump:\n" <<
                 conv({buffer, buffer+recieved}) <<*/ std::endl;
                 HTTP http;
-                std::string res(http.buildResponse({buffer, buffer + received}));
+                std::string res(http.buildResponse({buffer, buffer + received}, manifest));
 //                LOG(DEBUG) << "Sending response to client " << socket.getSocketFd() << ". Dump:\n" <<
 //                                 conv(res) << std::endl;
 
@@ -205,8 +204,8 @@ namespace ryuuk
                     return;
                 }
             }
-//         }
-//         while (received > 0);
+        }
+        while (manifest.keepAlive && received > 0);
 
         std::lock_guard<std::mutex> guard(m_queueMutex);
         m_cleanupQueue.push_back(socket.getSocketFd());
