@@ -45,14 +45,17 @@ namespace ryuuk
     {
         bool directory      = ((flags & SendDirectory) == SendDirectory),
              nopayload      = ((flags & NoPayload)     == NoPayload),
-             keepConnection = ((flags & KeepConnection)== KeepConnection);
+             keepConnection = ((flags & KeepConnection)== KeepConnection),
+             httpLegacy     = ((flags & HTTPLegacy)    == HTTPLegacy);
 
         // Status line
         // Use `at' instead of `operator[]' because the former throws an exception if the code isn't in the map
-        m_responseString = "HTTP/1.1 " + std::to_string(code) + " " + responsePhrase.at(code) + "\r\n"
+        m_responseString = "HTTP/" + std::string(httpLegacy ? "1.0 " : "1.1 ") +
+                            std::to_string(code) + " " + responsePhrase.at(code) + "\r\n"
                            "Server: " + serverName + "\r\n"
-                           "Date: " + getDate() + "\r\n"
-                           "Connection: " + (keepConnection ? "keep-alive" : "close") + "\r\n";
+                           "Date: " + getDate() + "\r\n";
+        if (!httpLegacy)
+            m_responseString += "Connection: " + std::string(keepConnection ? "keep-alive" : "close") + "\r\n";
 
         LOG(INFO) << "Response: " << code << std::endl;
 

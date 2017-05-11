@@ -31,6 +31,7 @@ namespace ryuuk
             SendDirectory   = 1 << 1,
             NoPayload       = 1 << 2,
             KeepConnection  = 1 << 3,
+            HTTPLegacy      = 1 << 4,
         };
 
         Response() = default;

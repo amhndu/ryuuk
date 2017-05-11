@@ -45,9 +45,25 @@ namespace ryuuk
 
     std::string HTTP::buildResponse(const std::string& request, Manifest& manifest)
     {
+        // Perliminary test to see if we have the entire header before regex-ing it.
+        // Try to find either \n\n or \r\n\r\n
+        auto end = request.find("\n\n");
+        if (end != std::string::npos)
+            manifest.bytesRead = end + 2;
+        else if ((end  = request.find("\r\n\r\n")) != std::string::npos)
+            manifest.bytesRead = end + 4;
+        else
+        {
+            manifest.bytesRead = 0;
+            manifest.keepAlive = true;  // So we keep going after this attempt
+            return {};
+        }
+
+
         /*
         * Part of the pattern          Remark ([x] means this is capture group number x)
         * --------------------------------------------------------------------------------------------------------------
+        * ^                            Beginning of the string
         * ([A-Z]+)                     Method, in all caps  [1]
         * [ \t]+                       Sequence of spaces/tabs
         * (.+)                         Location, anything goes except \r, \n, U+2029 and U+2028 [2]
@@ -59,40 +75,38 @@ namespace ryuuk
         *                              (we're expecting the client be consistent with their line ending)
         *                              (replace \4 with \r?\n to be more lenient)
         * \4                           Empty line which marks the end of the header
-        * (.|[\r\nu2029u2028])*        Body. Anything goes. [6]
+        * ***** THIS PART'S BEEN REMOVED ******* (.|[\r\nu2029u2028])*        Body. Anything goes. [6]
         *
         * P.S. Those weird looking patterns involving u<codepoint> exist to match *anything*,
         * since '.' doesn't match those particular code points
         */
         const std::regex request_pattern (
-            R"(([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n)((?:.|[\r\nu2029u2028])*\4)*\4(.|[\r\nu2029u2028])*)"
+            R"(^([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n)((?:.|[\r\nu2029u2028])*\4)*\4)"
         );
 
         Response response;
 
         std::smatch matches;
-        if (std::regex_match(request, matches, request_pattern))
+        if (std::regex_search(request, matches, request_pattern))
         {
             std::string method      = matches[1],
                         location    = matches[2],
                         version     = matches[3],
                         line_end    = matches[4],
-                        headers     = matches[5],
-                        body        = matches[6];
+                        headers     = matches[5];
+                        // body        = matches[6];
             LOG(DEBUG) << "Request line : " << method << " " << location << " HTTP/" << version << std::endl;
 
             // Some simple searching
-            // TODO be more strict instead of simply searching (start by adding ^ to the front)
             manifest.keepAlive = true;
-            const std::regex fieldPattern("([a-zA-Z\\-]+):\\s+([a-zA-Z0-9\\-\\.\\/\\(\\),\\+:; \\=\\*]+)(\r?\n)");
+            // Pattern: field-name ":" white-space field-value [CR] LF
+            const std::regex fieldPattern("^([a-zA-Z\\-]+):\\s+([a-zA-Z0-9\\-\\.\\/\\(\\),\\+:; \\=\\*]+)(\r?\n)");
             auto search = headers;
             while (std::regex_search(search, matches, fieldPattern))
             {
                 std::string name  = matches[1],
                             value = matches[2];
 
-                if (version == "1.0")
-                    manifest.keepAlive = false;
 
                 if (name == "Connection")
                 {
@@ -121,10 +135,18 @@ namespace ryuuk
             }
 
 
-            unsigned int head = method == "HEAD" ? Response::NoPayload : Response::None;
+
+            unsigned int head = (method == "HEAD" ? Response::NoPayload : Response::None)
+                              | (manifest.keepAlive ? Response::KeepConnection : Response::None);
+            if (version == "1.0")
+            {
+                manifest.keepAlive = false;
+                head |= Response::HTTPLegacy;
+            }
+
             if (method != "GET" && method != "HEAD")
             {
-                response.create(Response::MethodNotAllowed);
+                response.create(Response::MethodNotAllowed, {}, head);
             }
             else try
             {

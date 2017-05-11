@@ -173,12 +173,25 @@ namespace ryuuk
         int received = -1;
         SocketStream socket(std::move(sock));
         HTTP::Manifest manifest;
+        std::string request;
+        bool leftOverAttempt = false;
         LOG(DEBUG) << "Worker starting up with socket " << socket.getSocketFd() << std::endl;
         do
         {
-            const char* buffer = nullptr;
-            // This needs fixin', see the todo.md
-            std::tie(received, buffer) = socket.receive();
+            if (!leftOverAttempt)
+            {
+                const char* buffer = nullptr;
+                std::tie(received, buffer) = socket.receive();
+                request.append(buffer, buffer + received);
+            }
+            else
+                leftOverAttempt = false;
+
+            if (request.size() > 4096)   // An arbitrary ceiling
+            {
+                // Forget replying, they're sending gibberish anyway.
+                break;
+            }
 
             if (received == 0)
             {
@@ -190,18 +203,33 @@ namespace ryuuk
             }
             else
             {
-                LOG(DEBUG) << "Received request from " << socket.getSocketFd() << /*". Dump:\n" <<
-                conv({buffer, buffer+recieved}) <<*/ std::endl;
+                LOG(DEBUG) << "Received data from " << socket.getSocketFd() << std::endl;
                 HTTP http;
-                std::string res(http.buildResponse({buffer, buffer + received}, manifest));
-//                LOG(DEBUG) << "Sending response to client " << socket.getSocketFd() << ". Dump:\n" <<
-//                                 conv(res) << std::endl;
+                std::string response(http.buildResponse(request, manifest));
 
-                if (socket.send(res.c_str(), res.size()) != res.size())
+                // If bytesRead is 0, that means the request is incomplete (or possibly malformed)
+                // We thus try and wait for it to complete in the next attempt.
+                if (manifest.bytesRead != 0)
                 {
-                    LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
-                    // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
-                    return;
+                    /*
+                    LOG(DEBUG) << "Request dump:\n" << conv(request) << std::endl;
+                    LOG(DEBUG) << "Sending response to client " << socket.getSocketFd() << ". Dump:\n" <<
+                                conv(res) << std::endl;
+                    */
+
+                    if (socket.send(response.c_str(), response.size()) != response.size())
+                    {
+                        LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
+                        // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
+                        // Also BIG files.
+                        break;
+                    }
+
+                    // Bytes that haven't been consumed will be used for the next request
+                    request.erase(0, manifest.bytesRead);
+                    if (!request.empty())
+                        leftOverAttempt = true;
+                    /*LOG(DEBUG) << "Request left-over dump:\n" << conv(request) << std::endl;*/
                 }
             }
         }
