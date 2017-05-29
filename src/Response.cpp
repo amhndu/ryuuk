@@ -13,7 +13,7 @@ namespace ryuuk
 {
     std::unordered_map<std::string, std::string> Response::mimeTypes{};
 
-    const std::unordered_map<Response::StatusCode, std::string> Response::responsePhrase = {
+    const std::unordered_map<Response::StatusCode, std::string, std::hash<int>> Response::responsePhrase = {
                     {OK,                "OK"},
                     {MovedPermanently,  "Moved Permanently"},
                     {BadRequest,        "Bad Request"},

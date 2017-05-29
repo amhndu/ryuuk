@@ -95,7 +95,7 @@ namespace ryuuk
                         line_end    = matches[4],
                         headers     = matches[5];
                         // body        = matches[6];
-            LOG(DEBUG) << "Request line : " << method << " " << location << " HTTP/" << version << std::endl;
+            LOG(INFO) << "Request line : " << method << " " << location << " HTTP/" << version << std::endl;
 
             // Some simple searching
             manifest.keepAlive = true;

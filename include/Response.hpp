@@ -53,7 +53,7 @@ namespace ryuuk
         bool permanentRedirect(const std::string& new_location);
 
         std::string m_responseString;
-        const static std::unordered_map<StatusCode, std::string> responsePhrase;
+        const static std::unordered_map<StatusCode, std::string, std::hash<int>> responsePhrase;
         const static std::string serverName;
     };
 
