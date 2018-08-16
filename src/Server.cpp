@@ -8,10 +8,20 @@
 #include <iomanip>
 #include <functional>
 
+namespace
+{
+    std::string emptyIfNull(const char* c_str)
+    {
+        if (c_str) return c_str;
+        return {};
+    }
+}
+
 namespace ryuuk
 {
-    Server::Server() : m_configFile{SERVER_CONFIG_FILE},
-                       m_running(true)
+
+
+    Server::Server() : m_running(true)
     {
         LOG(INFO) << "Server object created." << std::endl;
     }
@@ -43,12 +53,21 @@ namespace ryuuk
 
     void Server::parseConfigFile()
     {
-        std::ifstream configFile(m_configFile, std::ios::in);
+        if (m_configPath.empty())
+        {
+            std::string confDir = emptyIfNull(std::getenv("XDG_CONFIG_HOME"));
+            if (confDir.empty())
+                confDir = emptyIfNull(std::getenv("HOME")) + "/.config/";
+
+            m_configPath = confDir + "ryuuk/" + SERVER_CONFIG_FILE;
+        }
+
+        std::ifstream configFile(m_configPath, std::ios::in);
 
         if (!configFile.good() || !configFile.is_open())
         {
             LOG(ERROR) << "[FATAL] Ryuuk config file error: Unable to read config file! Terminating..." << std::endl;
-            throw std::runtime_error("[FATAL] \'" + m_configFile + "\': No such file exists or it is corrupted!");
+            throw std::runtime_error("[FATAL] \'" + m_configPath + "\': No such file exists or it is corrupted!");
         }
 
         // Read config options...
@@ -116,7 +135,7 @@ namespace ryuuk
             ++line_no;
         }
 
-        LOG(INFO) << "Parsed and applied server configuration from \'" + m_configFile << "\'." << std::endl;
+        LOG(INFO) << "Parsed and applied server configuration from \'" + m_configPath << "\'." << std::endl;
     }
 
     void Server::run()
@@ -248,7 +267,7 @@ namespace ryuuk
 
     void Server::setConfigFile(const std::string& file)
     {
-        m_configFile = file;
+        m_configPath = file;
         LOG(INFO) << "Ryuuk configuration file set to \'" + file + "\'" << std::endl;
     }
 

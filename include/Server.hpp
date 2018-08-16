@@ -36,7 +36,7 @@ namespace ryuuk
 
     public:
         const std::string SERVER_CONFIG_FILE = "ryuuk.conf";
-        std::string m_configFile;
+        std::string m_configPath;
 
         struct manifest
         {

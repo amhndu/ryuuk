@@ -123,7 +123,7 @@ namespace ryuuk
         const std::string html = "<html><head><title>Ryuuk</title></head><body><h2>" +
                                  std::to_string(code) + " " + responsePhrase.at(code) +
                                  "</h2><hr><br><br>"
-                                 "The requested error could not be sent. Light got to this location before you, unfortunately."
+                                 "The requested resource could not be sent. Light got to this location before you, unfortunately."
                                  "<br/><br/><br/><hr>"
                                  "<i>Hosted using <a href=\"https://github.com/amhndu/ryuuk\">Ryuuk</a></i></body></html>";
 
