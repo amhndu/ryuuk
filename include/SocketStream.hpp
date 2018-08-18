@@ -18,10 +18,17 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <string_view>
 
 
 namespace ryuuk
 {
+    enum class ReceiveResult
+    {
+        Success,
+        Disconnected,
+        Error
+    };
 
     class SocketStream : public Socket
     {
@@ -69,26 +76,25 @@ namespace ryuuk
         * High level function to send data to
         * a remote TCP socket.
         *
-        * @param data - pointer to data
-        * @param len - size of data (in bytes)
+        * @param data - data to send
         *
         * @return The no. of bytes sent
         *
         * NOTE: This funciton blocks the current
         * thread until all the data has been sent.
         */
-        int send(const char* data, std::size_t len);
+        std::size_t send(std::string_view data);
 
         /**
         * High level method to receive data from a
         * remote TCP socket.
         *
-        * @return (number of bytes sent, pointer to the data)
+        * @return a read-only view of the received message
         *
         * Note: This method blocks the current thread
         * until all the data has been received.
         */
-        std::pair<int, const char*> receive();
+        std::pair<ReceiveResult, std::string_view> receive();
 
     private:
 

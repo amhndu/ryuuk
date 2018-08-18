@@ -1,11 +1,12 @@
 #include <regex>
 #include <errno.h>
 #include <algorithm>
+#include <vector>
 
 #include "Log.hpp"
 #include "Utility.hpp"
 #include "HTTP.hpp"
-#include "Response.hpp"
+#include "ResponseCreator.hpp"
 
 namespace ryuuk
 {
@@ -43,20 +44,21 @@ namespace ryuuk
     }
 
 
-    std::string HTTP::buildResponse(const std::string& request, Manifest& manifest)
+    HTTP::Result HTTP::buildResponse(const std::string& request)
     {
+        Result result;
         // Perliminary test to see if we have the entire header before regex-ing it.
         // Try to find either \n\n or \r\n\r\n
         auto end = request.find("\n\n");
         if (end != std::string::npos)
-            manifest.bytesRead = end + 2;
+            result.bytesRead = end + 2;
         else if ((end  = request.find("\r\n\r\n")) != std::string::npos)
-            manifest.bytesRead = end + 4;
+            result.bytesRead = end + 4;
         else
         {
-            manifest.bytesRead = 0;
-            manifest.keepAlive = true;  // So we keep going after this attempt
-            return {};
+            result.bytesRead = 0;
+            result.keepAlive = true;  // So we keep going after this attempt
+            return result;
         }
 
 
@@ -84,7 +86,7 @@ namespace ryuuk
             R"(^([A-Z]+)[ \t]+(.+)[ \t]+HTTP/(\d\.\d)(\r?\n)((?:.|[\r\nu2029u2028])*\4)*\4)"
         );
 
-        Response response;
+        ResponseCreator responseCreator;
 
         std::smatch matches;
         if (std::regex_search(request, matches, request_pattern))
@@ -98,7 +100,7 @@ namespace ryuuk
             LOG(INFO) << "Request line : " << method << " " << location << " HTTP/" << version << std::endl;
 
             // Some simple searching
-            manifest.keepAlive = true;
+            result.keepAlive = true;
             // Pattern: field-name ":" white-space field-value [CR] LF
             const std::regex fieldPattern("^([a-zA-Z\\-]+):\\s+([a-zA-Z0-9\\-\\.\\/\\(\\),\\+:; \\=\\*]+)(\r?\n)");
             auto search = headers;
@@ -112,7 +114,7 @@ namespace ryuuk
                 {
                     if (value == "close")
                     {
-                        manifest.keepAlive = false;
+                        result.keepAlive = false;
                     }
                     else if (value != "keep-alive")
                     {
@@ -136,17 +138,17 @@ namespace ryuuk
 
 
 
-            unsigned int head = (method == "HEAD" ? Response::NoPayload : Response::None)
-                              | (manifest.keepAlive ? Response::KeepConnection : Response::None);
+            unsigned int flags = (method == "HEAD" ? ResponseCreator::NoPayload : ResponseCreator::None)
+                              | (result.keepAlive ? ResponseCreator::KeepConnection : ResponseCreator::None);
             if (version == "1.0")
             {
-                manifest.keepAlive = false;
-                head |= Response::HTTPLegacy;
+                result.keepAlive = false;
+                flags |= ResponseCreator::HTTPLegacy;
             }
 
             if (method != "GET" && method != "HEAD")
             {
-                response.create(Response::MethodNotAllowed, {}, head);
+                responseCreator.create(ResponseCreator::MethodNotAllowed, {}, flags);
             }
             else try
             {
@@ -176,40 +178,39 @@ namespace ryuuk
                 switch (type)
                 {
                     case Regular:
-                        if (!response.create(Response::OK, location, head))
-                            response.create(Response::InternalError, {}, head);
+                        result.response = responseCreator.create(ResponseCreator::OK, location, flags);
                         break;
                     case Directory:
                         // If the path doesn't have a slash, redirect by adding it, this makes relative links work properly
                         // TODO FIXME instead of sending orig_loc, send urlEncode(location.substr(1))
                         if (location.back() != '/')
-                            response.create(Response::MovedPermanently,
-                                            /*location.substr(1)*/ orig_loc + '/', head); // Remove the preceding '.'
-                        else if (!response.create(Response::OK, location, Response::SendDirectory | head))
-                            response.create(Response::InternalError, {}, head);
+                            result.response = responseCreator.create(ResponseCreator::MovedPermanently,
+                                                                     orig_loc + '/', flags);
+                        else
+                            result.response = responseCreator.create(ResponseCreator::OK, location, ResponseCreator::SendDirectory | flags);
                         break;
                     case PermissionDenied:
-                        response.create(Response::Forbidden, {}, head);
+                        result.response = responseCreator.create(ResponseCreator::Forbidden, {}, flags);
                         break;
                     case NonExistent:
-                        response.create(Response::NotFound, {}, head);
+                        result.response = responseCreator.create(ResponseCreator::NotFound, {}, flags);
                         break;
                     case Other:
-                        response.create(Response::InternalError, {}, head);
+                        result.response = responseCreator.create(ResponseCreator::InternalError, {}, flags);
                         break;
                 }
             }
             catch (const std::domain_error& e)
             {
                 LOG(INFO) << "Attempt to retrieve resource outside current directory" << std::endl;
-                response.create(Response::Forbidden, {}, head);
+                responseCreator.create(ResponseCreator::Forbidden, {}, flags);
             }
         }
         else
         {
-            response.create(Response::BadRequest);
+            responseCreator.create(ResponseCreator::BadRequest);
         }
 
-        return response;    // Implicitly converted to string
+        return result;
    }
 }

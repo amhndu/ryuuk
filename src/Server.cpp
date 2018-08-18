@@ -1,6 +1,7 @@
 #include "Utility.hpp"
 #include "Server.hpp"
-#include "HTTP.hpp"
+#include "Worker.hpp"
+#include "MIMERegistry.hpp"
 
 #include <fstream>
 #include <algorithm>
@@ -125,7 +126,7 @@ namespace ryuuk
                 std::string field  = ltrim(rtrim(line.substr(0, divider)));
                 std::string value = ltrim(rtrim(line.substr(divider + 1)));
 
-                Response::mimeTypes[field] = value;
+                MIMERegistry::registerMIME(field, value);
 
                 LOG(DEBUG) << "Added MIME type: " + field + ": " + value << std::endl;
             }
@@ -147,26 +148,8 @@ namespace ryuuk
             if (socket.valid())
             {
                 LOG(DEBUG) << "Accepting new connection" << std::endl;
-
-                std::lock_guard<std::mutex> guard(m_queueMutex);
-                if (!m_cleanupQueue.empty())
-                {
-                    LOG(DEBUG) << "Doing worker thread cleanup" << std::endl;
-                }
-                for (int fd : m_cleanupQueue)
-                {
-                    auto i = m_connections.find(fd);
-                    if (i == m_connections.end())
-                        throw std::runtime_error("fd " + std::to_string(fd) + " from m_cleanupQueue not found in map");
-                    LOG(DEBUG) << "Removing worker/socket " << fd << std::endl;
-                    i->second.join();
-                    m_connections.erase(i);
-                }
-                m_cleanupQueue.clear();
-
-                // Insertion must be after clean-up, otherwise, we'll delete a thread before it's socket was closed
-                int fd = socket.getSocketFd();  // Copy the fd before we move the socket object (and thus invalidate it)
-                m_connections.emplace(fd, std::thread(&Server::worker, this, std::move(socket)));
+                auto thread = std::thread(&worker, std::move(socket));
+                thread.detach();
             }
             else
             {
@@ -187,78 +170,6 @@ namespace ryuuk
         LOG(INFO) << "Server closed." << std::endl;
     }
 
-    void Server::worker(SocketStream &&sock)
-    {
-        int received = -1;
-        SocketStream socket(std::move(sock));
-        HTTP::Manifest manifest;
-        std::string request;
-        bool leftOverAttempt = false;
-        LOG(DEBUG) << "Worker starting up with socket " << socket.getSocketFd() << std::endl;
-        do
-        {
-            if (!leftOverAttempt)
-            {
-                const char* buffer = nullptr;
-                std::tie(received, buffer) = socket.receive();
-                request.append(buffer, buffer + received);
-            }
-            else
-                leftOverAttempt = false;
-
-            if (request.size() > 4096)   // An arbitrary ceiling
-            {
-                // Forget replying, they're sending gibberish anyway.
-                break;
-            }
-
-            if (received == 0)
-            {
-                LOG(DEBUG) << "Removing socket " << socket.getSocketFd() << std::endl;
-            }
-            else if (received < 0)
-            {
-                LOG(ERROR) << "Receive error with socket " << socket.getSocketFd() << " and errno " << errno << std::endl;
-            }
-            else
-            {
-                LOG(DEBUG) << "Received data from " << socket.getSocketFd() << std::endl;
-                HTTP http;
-                std::string response(http.buildResponse(request, manifest));
-
-                // If bytesRead is 0, that means the request is incomplete (or possibly malformed)
-                // We thus try and wait for it to complete in the next attempt.
-                if (manifest.bytesRead != 0)
-                {
-                    /*
-                    LOG(DEBUG) << "Request dump:\n" << conv(request) << std::endl;
-                    LOG(DEBUG) << "Sending response to client " << socket.getSocketFd() << ". Dump:\n" <<
-                                conv(res) << std::endl;
-                    */
-
-                    if (socket.send(response.c_str(), response.size()) != response.size())
-                    {
-                        LOG(INFO) << "Couldn't send HTTP response. errno: " << errno << std::endl;
-                        // FIXME TODO Should we just remove the socket or maybe try doing this a couple of more times ?
-                        // Also BIG files.
-                        break;
-                    }
-
-                    // Bytes that haven't been consumed will be used for the next request
-                    request.erase(0, manifest.bytesRead);
-                    if (!request.empty())
-                        leftOverAttempt = true;
-                    /*LOG(DEBUG) << "Request left-over dump:\n" << conv(request) << std::endl;*/
-                }
-            }
-        }
-        while (manifest.keepAlive && received > 0);
-
-        std::lock_guard<std::mutex> guard(m_queueMutex);
-        m_cleanupQueue.push_back(socket.getSocketFd());
-        LOG(DEBUG) << "Adding socket " << socket.getSocketFd() << " to cleanup queue. "
-                   << "Worker thread closing" << std::endl;
-    }
 
     void Server::shutdown()
     {

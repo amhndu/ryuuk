@@ -14,6 +14,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -pthread")
 endif()
 
+if(CMAKE_COMPILER_IS_GNUCXX AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9.1)
+    set(LIBS stdc++fs)
+endif()
+
 # Add directory containing FindSFML.cmake to module path
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/Modules/;${CMAKE_MODULE_PATH};${CMAKE_SOURCE_DIR}")
 
@@ -61,10 +65,9 @@ endif()
 
 
 add_executable(ryuuk ${SOURCES})
-target_link_libraries(ryuuk)
 
-set_property(TARGET ryuuk PROPERTY CXX_STANDARD 11)
+set_property(TARGET ryuuk PROPERTY CXX_STANDARD 17)
 set_property(TARGET ryuuk PROPERTY CXX_STANDARD_REQUIRED ON)
 
-target_link_libraries(ryuuk)
+target_link_libraries(ryuuk ${LIBS})
 define_file_basename_for_sources(ryuuk)

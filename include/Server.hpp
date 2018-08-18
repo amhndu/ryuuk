@@ -4,7 +4,7 @@
 #include "Log.hpp"
 #include "SocketStream.hpp"
 #include "SocketListener.hpp"
-#include "Response.hpp"
+#include "ResponseCreator.hpp"
 
 #include <map>
 #include <list>
@@ -28,8 +28,6 @@ namespace ryuuk
 
         void run();
 
-        void worker(SocketStream&& sock);
-
         void shutdown();
 
         void setConfigFile(const std::string& file);
@@ -43,7 +41,6 @@ namespace ryuuk
             std::string ip;
             unsigned    port;
             unsigned    backlog;
-            std::unordered_map<std::string, std::string>& mime_types = Response::mimeTypes;
         } server_manifest;
 
     private:

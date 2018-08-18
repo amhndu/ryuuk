@@ -4,6 +4,15 @@
 
 namespace ryuuk
 {
+    ReceiveResult toResult(ssize_t size)
+    {
+        if (size == 0)
+            return ReceiveResult::Disconnected;
+        if (size < 0)
+            return ReceiveResult::Error;
+        return ReceiveResult::Success;
+    }
+
     SocketStream::SocketStream()
     {
     }
@@ -34,13 +43,14 @@ namespace ryuuk
         ::shutdown(m_socketfd, SHUT_RDWR);
     }
 
-    int SocketStream::send(const char* data, size_t len)
+    std::size_t SocketStream::send(std::string_view data)
     {
-        int totalSent = 0, sent = 0;
+        std::size_t totalSent = 0;
+        ssize_t sent = 0;
 
-        while (totalSent < len)
+        while (totalSent < data.size())
         {
-            if (0 > (sent = ::send(m_socketfd, (const void *)(data + totalSent), size_t(len - totalSent), 0)))
+            if (0 > (sent = ::send(m_socketfd, (const void *)(data.data() + totalSent), data.size() - totalSent, 0)))
             {
                 LOG(ERROR) << "send() : Error in sending data to remote client" << std::endl;
                 return totalSent;
@@ -54,21 +64,21 @@ namespace ryuuk
         return totalSent;
     }
 
-    std::pair<int, const char*> SocketStream::receive()
+    std::pair<ReceiveResult, std::string_view> SocketStream::receive()
     {
-        int recvd = 0;
+        ssize_t recvd = 0;
 
         if (0 > (recvd = recv(m_socketfd, m_rwbuffer,
                     DEFAULT_MSG_LENGTH, 0)))
         {
             LOG(ERROR) << "recv() : Error in receving data from remote client. errno: " << errno << std::endl;
         }
-//         else if (recvd > 0)
-//             LOG(DEBUG) << "Recevied data from remote client" << std::endl;
-//         else
-//             LOG(DEBUG) << "Socket " << m_socketfd << " disconnected." << std::endl;
+        auto result = toResult(recvd);
+        auto result_view = result == ReceiveResult::Success
+                            ? std::string_view{m_rwbuffer, static_cast<std::size_t>(recvd)}
+                            : std::string_view{};
 
-        return std::make_pair(recvd, m_rwbuffer);
+        return {result, result_view};
     }
 
 }
