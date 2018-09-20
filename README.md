@@ -1,12 +1,12 @@
 # Ryuuk
 
-Ryuuk is a prospective concurrent web-server written in C++.
+Ryuuk is a concurrent web-server written in C++.
 
 Currently Ryuuk runs only in POSIX compliant environments only.
 
 ## Building
 
-***nix systems**
+**nix systems**
 ```
 $ git clone https://github.com/amhndu/ryuuk
 $ cd ryuuk
@@ -15,11 +15,9 @@ $ cmake ..
 $ make -ji # where i = no. of cores you can spare
 ```
 
-*Windows*
-
-1. Nuke your Windows installation
-2. Install a Linux flavour
-3. Follow the build instructions for *nix systems
+**Windows**   
+~~Who uses windows anyway ?~~   
+The socket is currently not portable with windows. Contributions welcome.
 
 ## Why
 
@@ -32,8 +30,8 @@ $ make -ji # where i = no. of cores you can spare
 
 #### Short term
 
-* Basic HTTP 1.1 GET requests
-* A Functional web server
+~~* Basic HTTP 1.1 GET requests~~   
+~~* A Functional web server~~   
 
 
 #### Long term
